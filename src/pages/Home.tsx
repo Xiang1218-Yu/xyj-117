@@ -54,6 +54,14 @@ export default function Home() {
   const showLeftPanel = leftPanelOpen && !dataPanelFullscreen;
   const showRightPanel = rightPanelOpen && !dataPanelFullscreen;
 
+  const handleToggleBottomPanel = useCallback(() => {
+    if (dataPanelFullscreen) {
+      setDataPanelFullscreen(false);
+    } else {
+      toggleBottomPanel();
+    }
+  }, [dataPanelFullscreen, setDataPanelFullscreen, toggleBottomPanel]);
+
   const handleExport = useCallback(() => {
     if (!currentMolecule) return;
     const data = {
@@ -132,13 +140,13 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={toggleBottomPanel}
+            onClick={handleToggleBottomPanel}
             className={`p-2 rounded-lg transition-all ${
               bottomPanelOpen || dataPanelFullscreen
                 ? 'bg-quantum-purple/20 text-quantum-purple' 
                 : 'bg-space-700 text-gray-400 hover:text-white hover:bg-space-600'
             }`}
-            title="切换数据面板"
+            title={bottomPanelOpen || dataPanelFullscreen ? '收起数据面板' : '展开数据面板'}
           >
             <PanelBottom size={18} />
           </motion.button>

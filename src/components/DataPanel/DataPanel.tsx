@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LineChart, 
@@ -31,7 +31,8 @@ import {
   Download,
   Share2,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Check
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { getAtomColor } from '../../utils/atomColors';
@@ -56,7 +57,55 @@ export function DataPanel() {
   } = useStore();
 
   const [expandedSection, setExpandedSection] = useState<string | null>('energy');
+  const [copied, setCopied] = useState(false);
   const isFullscreen = dataPanelFullscreen;
+
+  const handleExport = useCallback(() => {
+    if (!currentMolecule) return;
+    const data = {
+      molecule: currentMolecule,
+      simulation: simulation,
+      calculationResult: calculationResult,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentMolecule.name}_data_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [currentMolecule, simulation, calculationResult]);
+
+  const handleShare = useCallback(async () => {
+    if (!currentMolecule) return;
+    
+    const shareData = {
+      title: `Molecular Lab - ${currentMolecule.name}`,
+      text: `查看 ${currentMolecule.name} 的分子模拟结果`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (err) {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (clipboardErr) {
+        console.error('分享失败:', err);
+      }
+    }
+  }, [currentMolecule]);
 
   const selectedAtom = useMemo(() => {
     if (!selectedAtomId) return null;
@@ -168,16 +217,28 @@ export function DataPanel() {
         </div>
         <div className="flex items-center gap-2">
           <button 
-            className="p-1.5 rounded-lg bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white transition-colors"
+            onClick={handleExport}
+            disabled={!currentMolecule}
+            className={`p-1.5 rounded-lg transition-colors ${
+              currentMolecule 
+                ? 'bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white' 
+                : 'bg-space-800 text-gray-600 cursor-not-allowed'
+            }`}
             title="导出数据"
           >
             <Download size={16} />
           </button>
           <button 
-            className="p-1.5 rounded-lg bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white transition-colors"
-            title="分享"
+            onClick={handleShare}
+            disabled={!currentMolecule}
+            className={`p-1.5 rounded-lg transition-colors ${
+              currentMolecule 
+                ? 'bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white' 
+                : 'bg-space-800 text-gray-600 cursor-not-allowed'
+            }`}
+            title={copied ? '已复制' : '分享'}
           >
-            <Share2 size={16} />
+            {copied ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
           </button>
           <button 
             onClick={() => setDataPanelFullscreen(!isFullscreen)}
