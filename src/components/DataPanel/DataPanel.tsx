@@ -51,10 +51,12 @@ export function DataPanel() {
     selectedSimulationType,
     selectedAtomId,
     currentAtoms,
+    dataPanelFullscreen,
+    setDataPanelFullscreen,
   } = useStore();
 
   const [expandedSection, setExpandedSection] = useState<string | null>('energy');
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const isFullscreen = dataPanelFullscreen;
 
   const selectedAtom = useMemo(() => {
     if (!selectedAtomId) return null;
@@ -178,7 +180,7 @@ export function DataPanel() {
             <Share2 size={16} />
           </button>
           <button 
-            onClick={() => setIsFullscreen(!isFullscreen)}
+            onClick={() => setDataPanelFullscreen(!isFullscreen)}
             className="p-1.5 rounded-lg bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white transition-colors"
             title={isFullscreen ? '退出全屏' : '全屏'}
           >

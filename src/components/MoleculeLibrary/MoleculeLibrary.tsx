@@ -26,6 +26,10 @@ const categoryColors: Record<string, string> = {
   '有机分子': 'from-indigo-500 to-violet-500',
 };
 
+interface MoleculeLibraryProps {
+  onAddMolecule?: () => void;
+}
+
 interface MoleculeCardProps {
   molecule: Molecule;
   isSelected: boolean;
@@ -115,7 +119,7 @@ function MoleculeCard({ molecule, isSelected, onClick }: MoleculeCardProps) {
   );
 }
 
-export function MoleculeLibrary() {
+export function MoleculeLibrary({ onAddMolecule }: MoleculeLibraryProps) {
   const {
     currentMolecule,
     setCurrentMolecule,
@@ -171,7 +175,11 @@ export function MoleculeLibrary() {
           <h2 className="font-display text-xl font-bold bg-gradient-to-r from-quantum-blue to-quantum-purple bg-clip-text text-transparent">
             分子库
           </h2>
-          <button className="p-1.5 rounded-lg bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={onAddMolecule}
+            className="p-1.5 rounded-lg bg-space-700 hover:bg-space-600 text-gray-400 hover:text-white transition-colors"
+            title="添加分子"
+          >
             <Plus size={18} />
           </button>
         </div>

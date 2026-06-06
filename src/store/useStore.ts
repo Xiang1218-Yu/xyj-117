@@ -54,12 +54,14 @@ interface UIStore {
   leftPanelOpen: boolean;
   rightPanelOpen: boolean;
   bottomPanelOpen: boolean;
+  dataPanelFullscreen: boolean;
   activeTab: string;
   measurements: Measurement[];
   searchQuery: string;
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
   toggleBottomPanel: () => void;
+  setDataPanelFullscreen: (fullscreen: boolean) => void;
   setActiveTab: (tab: string) => void;
   addMeasurement: (measurement: Measurement) => void;
   removeMeasurement: (index: number) => void;
@@ -209,6 +211,7 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore>((set, 
   leftPanelOpen: true,
   rightPanelOpen: true,
   bottomPanelOpen: true,
+  dataPanelFullscreen: false,
   activeTab: 'molecules',
   measurements: [],
   searchQuery: '',
@@ -216,6 +219,7 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore>((set, 
   toggleLeftPanel: () => set((state) => ({ leftPanelOpen: !state.leftPanelOpen })),
   toggleRightPanel: () => set((state) => ({ rightPanelOpen: !state.rightPanelOpen })),
   toggleBottomPanel: () => set((state) => ({ bottomPanelOpen: !state.bottomPanelOpen })),
+  setDataPanelFullscreen: (fullscreen) => set({ dataPanelFullscreen: fullscreen }),
   
   setActiveTab: (tab) => set({ activeTab: tab }),
   
