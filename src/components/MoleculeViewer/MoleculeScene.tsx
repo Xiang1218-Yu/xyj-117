@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { Molecule, Atom, Bond, DisplayMode, EditorState } from '../../types';
+import { Molecule, Atom, Bond, DisplayMode, EditorState, DisplayModeConfig } from '../../types';
 import { Atoms } from './Atoms';
 import { Bonds } from './Bonds';
 import { Ribbon } from './Ribbon';
@@ -35,6 +35,7 @@ interface MoleculeSceneProps {
   onAtomDrag?: (atomId: string, x: number, y: number, z: number) => void;
   onSceneClick?: (point: THREE.Vector3) => void;
   onClearSelection?: () => void;
+  displayConfig?: DisplayModeConfig;
 }
 
 function AutoRotatingGroup({ 
@@ -89,6 +90,7 @@ function SceneContent({
   onAtomDrag,
   onSceneClick,
   onClearSelection,
+  displayConfig,
 }: Omit<MoleculeSceneProps, 'showLabels' | 'backgroundColor'>) {
   const [hoveredAtom, setHoveredAtom] = useState<string | null>(null);
   const [hoveredBond, setHoveredBond] = useState<string | null>(null);
@@ -206,6 +208,7 @@ function SceneContent({
             onAtomDrag={onAtomDrag}
             onBondStart={onBondStart}
             onAtomDelete={onDeleteAtom}
+            config={displayConfig}
           />
           
           <Bonds
@@ -217,6 +220,7 @@ function SceneContent({
             onBondClick={handleBondClick}
             onBondHover={setHoveredBond}
             onBondDelete={onDeleteBond}
+            config={displayConfig}
           />
           
           <Ribbon

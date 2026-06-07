@@ -58,6 +58,7 @@ export default function Home() {
     clearEditorSelection,
     undoEdit,
     redoEdit,
+    displayConfig,
   } = useStore();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -329,6 +330,7 @@ export default function Home() {
                 onAtomDrag={dragAtom}
                 onSceneClick={handleSceneClick}
                 onClearSelection={clearEditorSelection}
+                displayConfig={displayConfig}
               />
             ) : (
               <Empty />

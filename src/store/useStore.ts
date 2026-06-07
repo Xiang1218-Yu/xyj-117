@@ -13,6 +13,15 @@ import {
   EditorTool,
   EditorMode,
   EditHistoryEntry,
+  DisplayModeConfig,
+  DisplayPreset,
+  BallStickConfig,
+  SpaceFillingConfig,
+  RibbonConfig,
+  SurfaceConfig,
+  LineConfig,
+  StickConfig,
+  PointCloudConfig,
 } from '../types';
 import { moleculeLibrary, caffeineMolecule } from '../data/molecules';
 import {
@@ -38,6 +47,9 @@ interface MoleculeStore {
   autoRotate: boolean;
   backgroundColor: string;
   showElectronCloud: boolean;
+  displayConfig: DisplayModeConfig;
+  presets: DisplayPreset[];
+  activePresetId: string | null;
   setCurrentMolecule: (molecule: Molecule | null) => void;
   setCurrentAtoms: (atoms: Atom[]) => void;
   setSelectedAtom: (atomId: string | null) => void;
@@ -48,6 +60,13 @@ interface MoleculeStore {
   setBackgroundColor: (color: string) => void;
   setShowElectronCloud: (show: boolean) => void;
   resetView: () => void;
+  setDisplayConfig: <T extends DisplayMode>(mode: T, config: Partial<DisplayModeConfig[T]>) => void;
+  resetDisplayConfig: (mode?: DisplayMode) => void;
+  savePreset: (name: string, description?: string) => void;
+  applyPreset: (presetId: string) => void;
+  deletePreset: (presetId: string) => void;
+  updatePreset: (presetId: string, updates: Partial<Pick<DisplayPreset, 'name' | 'description'>>) => void;
+  setActivePresetId: (id: string | null) => void;
 }
 
 interface SimulationStore {
@@ -120,6 +139,143 @@ const defaultSimulationParams: SimulationParameters = {
   iterations: 1000,
 };
 
+const defaultBallStickConfig: BallStickConfig = {
+  atomScale: 0.5,
+  bondRadius: 0.15,
+  atomMetalness: 0.3,
+  atomRoughness: 0.4,
+  bondMetalness: 0.2,
+  bondRoughness: 0.5,
+};
+
+const defaultSpaceFillingConfig: SpaceFillingConfig = {
+  atomScale: 1.2,
+  metalness: 0.2,
+  roughness: 0.5,
+};
+
+const defaultRibbonConfig: RibbonConfig = {
+  thickness: 0.3,
+  tension: 0.5,
+  resolution: 20,
+  colorBy: 'secondary',
+};
+
+const defaultSurfaceConfig: SurfaceConfig = {
+  opacity: 0.8,
+  quality: 'medium',
+  colorScheme: 'electrostatic',
+};
+
+const defaultLineConfig: LineConfig = {
+  lineWidth: 2,
+  colorBy: 'element',
+  uniformColor: '#ffffff',
+  showAtomPoints: true,
+  atomPointSize: 0.3,
+};
+
+const defaultStickConfig: StickConfig = {
+  stickRadius: 0.2,
+  stickLengthRatio: 0.8,
+  metalness: 0.3,
+  roughness: 0.4,
+  showAtomSpheres: true,
+  atomSphereScale: 0.3,
+};
+
+const defaultPointCloudConfig: PointCloudConfig = {
+  pointSize: 0.5,
+  attenuation: true,
+  colorBy: 'element',
+  sizeBy: 'element',
+  constantSize: 0.5,
+  opacity: 0.9,
+};
+
+const defaultDisplayConfig: DisplayModeConfig = {
+  ball_stick: defaultBallStickConfig,
+  space_filling: defaultSpaceFillingConfig,
+  ribbon: defaultRibbonConfig,
+  surface: defaultSurfaceConfig,
+  line: defaultLineConfig,
+  stick: defaultStickConfig,
+  point_cloud: defaultPointCloudConfig,
+};
+
+const defaultPresets: DisplayPreset[] = [
+  {
+    id: 'default-ball-stick',
+    name: '默认球棍模型',
+    description: '经典的球棍模型显示，适合观察分子结构',
+    displayMode: 'ball_stick',
+    showHydrogens: true,
+    showLabels: false,
+    autoRotate: true,
+    backgroundColor: '#0A1628',
+    showElectronCloud: false,
+    config: defaultDisplayConfig,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    id: 'default-space-filling',
+    name: '空间填充',
+    description: '显示原子的范德华半径，适合观察分子体积',
+    displayMode: 'space_filling',
+    showHydrogens: true,
+    showLabels: false,
+    autoRotate: true,
+    backgroundColor: '#000000',
+    showElectronCloud: false,
+    config: defaultDisplayConfig,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    id: 'default-line',
+    name: '线型模型',
+    description: '简洁的线条显示，适合大分子快速浏览',
+    displayMode: 'line',
+    showHydrogens: false,
+    showLabels: false,
+    autoRotate: false,
+    backgroundColor: '#0A1628',
+    showElectronCloud: false,
+    config: defaultDisplayConfig,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    id: 'default-stick',
+    name: '棍棒模型',
+    description: '突出显示化学键，适合观察键连接方式',
+    displayMode: 'stick',
+    showHydrogens: true,
+    showLabels: false,
+    autoRotate: true,
+    backgroundColor: '#1a1a2e',
+    showElectronCloud: false,
+    config: defaultDisplayConfig,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    id: 'default-point-cloud',
+    name: '点云模型',
+    description: '原子显示为点云，适合观察分子整体分布',
+    displayMode: 'point_cloud',
+    showHydrogens: false,
+    showLabels: false,
+    autoRotate: true,
+    backgroundColor: '#000000',
+    showElectronCloud: false,
+    config: defaultDisplayConfig,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+];
+
 export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore>((set, get) => ({
   currentMolecule: caffeineMolecule,
   currentAtoms: caffeineMolecule.atoms,
@@ -130,6 +286,9 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
   autoRotate: true,
   backgroundColor: '#0A1628',
   showElectronCloud: false,
+  displayConfig: defaultDisplayConfig,
+  presets: defaultPresets,
+  activePresetId: 'default-ball-stick',
 
   setCurrentMolecule: (molecule) => set({ 
     currentMolecule: molecule,
@@ -163,6 +322,88 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
       });
     }
   },
+
+  setDisplayConfig: (mode, config) => set((state) => ({
+    displayConfig: {
+      ...state.displayConfig,
+      [mode]: {
+        ...state.displayConfig[mode],
+        ...config,
+      },
+    },
+    activePresetId: null,
+  })),
+
+  resetDisplayConfig: (mode) => set((state) => {
+    if (mode) {
+      return {
+        displayConfig: {
+          ...state.displayConfig,
+          [mode]: defaultDisplayConfig[mode],
+        },
+        activePresetId: null,
+      };
+    }
+    return {
+      displayConfig: defaultDisplayConfig,
+      activePresetId: null,
+    };
+  }),
+
+  savePreset: (name, description) => set((state) => {
+    const newPreset: DisplayPreset = {
+      id: `preset-${Date.now()}`,
+      name,
+      description,
+      displayMode: state.displayMode,
+      showHydrogens: state.showHydrogens,
+      showLabels: state.showLabels,
+      autoRotate: state.autoRotate,
+      backgroundColor: state.backgroundColor,
+      showElectronCloud: state.showElectronCloud,
+      config: JSON.parse(JSON.stringify(state.displayConfig)),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    return {
+      presets: [...state.presets, newPreset],
+      activePresetId: newPreset.id,
+    };
+  }),
+
+  applyPreset: (presetId) => set((state) => {
+    const preset = state.presets.find(p => p.id === presetId);
+    if (!preset) return {};
+    return {
+      displayMode: preset.displayMode,
+      showHydrogens: preset.showHydrogens,
+      showLabels: preset.showLabels,
+      autoRotate: preset.autoRotate,
+      backgroundColor: preset.backgroundColor,
+      showElectronCloud: preset.showElectronCloud,
+      displayConfig: JSON.parse(JSON.stringify(preset.config)),
+      activePresetId: preset.id,
+    };
+  }),
+
+  deletePreset: (presetId) => set((state) => {
+    const isDefaultPreset = presetId.startsWith('default-');
+    if (isDefaultPreset) return {};
+    return {
+      presets: state.presets.filter(p => p.id !== presetId),
+      activePresetId: state.activePresetId === presetId ? null : state.activePresetId,
+    };
+  }),
+
+  updatePreset: (presetId, updates) => set((state) => ({
+    presets: state.presets.map(p => 
+      p.id === presetId 
+        ? { ...p, ...updates, updatedAt: Date.now() }
+        : p
+    ),
+  })),
+
+  setActivePresetId: (id) => set({ activePresetId: id }),
 
   simulation: {
     isRunning: false,

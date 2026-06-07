@@ -31,7 +31,86 @@ export interface Molecule {
   category?: string;
 }
 
-export type DisplayMode = 'ball_stick' | 'space_filling' | 'ribbon' | 'surface';
+export type DisplayMode = 'ball_stick' | 'space_filling' | 'ribbon' | 'surface' | 'line' | 'stick' | 'point_cloud';
+
+export interface BallStickConfig {
+  atomScale: number;
+  bondRadius: number;
+  atomMetalness: number;
+  atomRoughness: number;
+  bondMetalness: number;
+  bondRoughness: number;
+}
+
+export interface SpaceFillingConfig {
+  atomScale: number;
+  metalness: number;
+  roughness: number;
+}
+
+export interface RibbonConfig {
+  thickness: number;
+  tension: number;
+  resolution: number;
+  colorBy: 'secondary' | 'chain' | 'residue';
+}
+
+export interface SurfaceConfig {
+  opacity: number;
+  quality: 'low' | 'medium' | 'high';
+  colorScheme: 'electrostatic' | 'hydrophobic' | 'chain';
+}
+
+export interface LineConfig {
+  lineWidth: number;
+  colorBy: 'element' | 'chain' | 'uniform';
+  uniformColor: string;
+  showAtomPoints: boolean;
+  atomPointSize: number;
+}
+
+export interface StickConfig {
+  stickRadius: number;
+  stickLengthRatio: number;
+  metalness: number;
+  roughness: number;
+  showAtomSpheres: boolean;
+  atomSphereScale: number;
+}
+
+export interface PointCloudConfig {
+  pointSize: number;
+  attenuation: boolean;
+  colorBy: 'element' | 'chain' | 'residue' | 'bfactor';
+  sizeBy: 'element' | 'constant';
+  constantSize: number;
+  opacity: number;
+}
+
+export interface DisplayModeConfig {
+  ball_stick: BallStickConfig;
+  space_filling: SpaceFillingConfig;
+  ribbon: RibbonConfig;
+  surface: SurfaceConfig;
+  line: LineConfig;
+  stick: StickConfig;
+  point_cloud: PointCloudConfig;
+}
+
+export interface DisplayPreset {
+  id: string;
+  name: string;
+  description?: string;
+  displayMode: DisplayMode;
+  showHydrogens: boolean;
+  showLabels: boolean;
+  autoRotate: boolean;
+  backgroundColor: string;
+  showElectronCloud: boolean;
+  config: DisplayModeConfig;
+  createdAt: number;
+  updatedAt: number;
+}
 export type SimulationType = 'folding' | 'docking' | 'material';
 export type MaterialProperty = 'conductivity' | 'elasticity' | 'band_gap';
 

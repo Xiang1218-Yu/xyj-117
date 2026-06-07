@@ -16,19 +16,27 @@ import {
   Atom,
   Box,
   Grid3X3,
-  Sparkles
+  Sparkles,
+  LineChart,
+  Cylinder,
+  Cloud
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { DisplayMode, SimulationType } from '../../types';
 import { simulateProteinFolding, simulateDocking, simulateMaterialProperties } from '../../utils/simulationEngine';
 import { moleculeLibrary, aspirinMolecule, lysozyme } from '../../data/molecules';
 import { PropertyEditor } from '../PropertyEditor/PropertyEditor';
+import { DisplayModeConfig } from './DisplayModeConfig';
+import { PresetManager } from './PresetManager';
 
 const displayModes: { id: DisplayMode; label: string; icon: any }[] = [
   { id: 'ball_stick', label: '球棍模型', icon: Atom },
   { id: 'space_filling', label: '空间填充', icon: Box },
   { id: 'ribbon', label: '带状图', icon: Grid3X3 },
   { id: 'surface', label: '电子云', icon: Sparkles },
+  { id: 'line', label: '线型模型', icon: LineChart },
+  { id: 'stick', label: '棍棒模型', icon: Cylinder },
+  { id: 'point_cloud', label: '点云模型', icon: Cloud },
 ];
 
 const simulationTypes: { id: SimulationType; label: string; icon: any; description: string }[] = [
@@ -83,6 +91,15 @@ export function ControlPanel() {
     backgroundColor,
     showElectronCloud,
     setShowElectronCloud,
+    displayConfig,
+    setDisplayConfig,
+    resetDisplayConfig,
+    presets,
+    activePresetId,
+    savePreset,
+    applyPreset,
+    deletePreset,
+    updatePreset,
   } = useStore();
 
   const [expandedSection, setExpandedSection] = useState<string | null>('display');
@@ -232,7 +249,7 @@ export function ControlPanel() {
                 className="overflow-hidden"
               >
                 <div className="p-4 pt-0 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                     {displayModes.map(mode => {
                       const Icon = mode.icon;
                       return (
@@ -244,14 +261,14 @@ export function ControlPanel() {
                             setDisplayMode(mode.id);
                             setShowElectronCloud(mode.id === 'surface');
                           }}
-                          className={`p-3 rounded-lg flex flex-col items-center gap-2 transition-all ${
+                          className={`p-2 rounded-lg flex flex-col items-center gap-1.5 transition-all ${
                             displayMode === mode.id
                               ? 'bg-quantum-blue/20 border border-quantum-blue/50 text-quantum-blue'
                               : 'bg-space-700/50 border border-space-600 text-gray-400 hover:text-white'
                           }`}
                         >
-                          <Icon size={20} />
-                          <span className="text-xs">{mode.label}</span>
+                          <Icon size={18} />
+                          <span className="text-[10px] leading-tight text-center">{mode.label}</span>
                         </motion.button>
                       );
                     })}
@@ -322,6 +339,9 @@ export function ControlPanel() {
                       ))}
                     </div>
                   </div>
+
+                  <DisplayModeConfig displayMode={displayMode} />
+                  <PresetManager />
                 </div>
               </motion.div>
             )}

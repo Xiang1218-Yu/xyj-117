@@ -1,18 +1,23 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Atom, Bond, EditorState } from '../../types';
+import { Atom, Bond, EditorState, DisplayMode, BallStickConfig, LineConfig, StickConfig } from '../../types';
 import { getAtomColor } from '../../utils/atomColors';
 
 interface BondsProps {
   bonds: Bond[];
   atoms: Atom[];
-  displayMode: 'ball_stick' | 'space_filling' | 'ribbon' | 'surface';
+  displayMode: DisplayMode;
   showHydrogens: boolean;
   editor?: EditorState;
   onBondClick?: (bondId: string) => void;
   onBondHover?: (bondId: string | null) => void;
   onBondDelete?: (bondId: string) => void;
+  config?: {
+    ball_stick?: Partial<BallStickConfig>;
+    line?: Partial<LineConfig>;
+    stick?: Partial<StickConfig>;
+  };
 }
 
 export function Bonds({ 
@@ -24,6 +29,7 @@ export function Bonds({
   onBondClick,
   onBondHover,
   onBondDelete,
+  config,
 }: BondsProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const cylinderRef = useRef<THREE.InstancedMesh>(null);
@@ -55,7 +61,39 @@ export function Bonds({
         let color1 = new THREE.Color(getAtomColor(a1.element));
         let color2 = new THREE.Color(getAtomColor(a2.element));
         
-        let bondRadius = displayMode === 'space_filling' ? 0.1 : 0.15;
+        let bondRadius = 0.15;
+        let metalness = 0.2;
+        let roughness = 0.5;
+        
+        switch (displayMode) {
+          case 'ball_stick':
+            bondRadius = config?.ball_stick?.bondRadius ?? 0.15;
+            metalness = config?.ball_stick?.bondMetalness ?? 0.2;
+            roughness = config?.ball_stick?.bondRoughness ?? 0.5;
+            break;
+          case 'stick':
+            bondRadius = config?.stick?.stickRadius ?? 0.2;
+            metalness = config?.stick?.metalness ?? 0.3;
+            roughness = config?.stick?.roughness ?? 0.4;
+            break;
+          case 'line':
+            bondRadius = 0.02;
+            break;
+          case 'space_filling':
+          case 'ribbon':
+          case 'surface':
+          case 'point_cloud':
+            bondRadius = 0;
+            break;
+          default:
+            bondRadius = 0.15;
+        }
+        
+        const lineConfig = config?.line;
+        if (displayMode === 'line' && lineConfig?.colorBy === 'uniform') {
+          color1 = new THREE.Color(lineConfig.uniformColor ?? '#ffffff');
+          color2 = new THREE.Color(lineConfig.uniformColor ?? '#ffffff');
+        }
         
         const isSelected = editor?.selectedBondId === bond.id;
         const isHovered = hoveredBondRef.current === bond.id;
@@ -97,9 +135,11 @@ export function Bonds({
           bondId: bond.id,
           isSelected,
           isHovered,
+          metalness,
+          roughness,
         };
       });
-  }, [bonds, atomMap, displayMode, showHydrogens, editor, hoveredBondRef.current]);
+  }, [bonds, atomMap, displayMode, showHydrogens, editor, hoveredBondRef.current, config]);
 
   useEffect(() => {
     if (!meshRef.current || !cylinderRef.current) return;
@@ -182,12 +222,74 @@ export function Bonds({
     }
   };
 
-  if (displayMode === 'space_filling' || displayMode === 'ribbon' || displayMode === 'surface') {
+  if (displayMode === 'space_filling' || displayMode === 'ribbon' || displayMode === 'surface' || displayMode === 'point_cloud') {
     return null;
   }
 
+  const visibleBonds = bondData.filter(d => d.bondRadius > 0);
+  if (visibleBonds.length === 0) return null;
+
+  const linePositions = useMemo(() => {
+    const positions = new Float32Array(bondData.length * 6);
+    const colors = new Float32Array(bondData.length * 6);
+    
+    bondData.forEach((d, i) => {
+      const baseIndex = i * 6;
+      positions[baseIndex] = d.start.x;
+      positions[baseIndex + 1] = d.start.y;
+      positions[baseIndex + 2] = d.start.z;
+      positions[baseIndex + 3] = d.end.x;
+      positions[baseIndex + 4] = d.end.y;
+      positions[baseIndex + 5] = d.end.z;
+      
+      colors[baseIndex] = d.color1.r;
+      colors[baseIndex + 1] = d.color1.g;
+      colors[baseIndex + 2] = d.color1.b;
+      colors[baseIndex + 3] = d.color2.r;
+      colors[baseIndex + 4] = d.color2.g;
+      colors[baseIndex + 5] = d.color2.b;
+    });
+    
+    return { positions, colors };
+  }, [bondData]);
+
+  if (displayMode === 'line') {
+    const lineConfig = config?.line;
+    return (
+      <>
+        <lineSegments
+          onPointerMove={handlePointerMove}
+          onPointerOut={handlePointerOut}
+          onClick={handleClick}
+        >
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={bondData.length * 2}
+              array={linePositions.positions}
+              itemSize={3}
+            />
+            <bufferAttribute
+              attach="attributes-color"
+              count={bondData.length * 2}
+              array={linePositions.colors}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            vertexColors
+            linewidth={lineConfig?.lineWidth ?? 2}
+            transparent
+            opacity={0.9}
+          />
+        </lineSegments>
+      </>
+    );
+  }
+
   const instanceCount = bondData.length * 2;
-  if (instanceCount === 0) return null;
+  const materialMetalness = bondData[0]?.metalness ?? 0.2;
+  const materialRoughness = bondData[0]?.roughness ?? 0.5;
 
   return (
     <instancedMesh
@@ -199,8 +301,8 @@ export function Bonds({
     >
       <cylinderGeometry args={[1, 1, 1, 8]} />
       <meshStandardMaterial
-        metalness={0.2}
-        roughness={0.5}
+        metalness={materialMetalness}
+        roughness={materialRoughness}
       />
     </instancedMesh>
   );
