@@ -1,5 +1,6 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { Atom, EditorState } from '../../types';
 import { getAtomColor, getAtomRadius } from '../../utils/atomColors';
@@ -263,6 +264,7 @@ export function Atoms({
   if (atomData.length === 0) return null;
 
   return (
+    <>
     <instancedMesh
       ref={meshRef}
       args={[undefined, undefined, atomData.length]}
@@ -279,5 +281,26 @@ export function Atoms({
         envMapIntensity={1}
       />
     </instancedMesh>
+
+      {/* Atom Label */}
+      {selectedAtomId && (() => {
+        const atom = filteredAtoms.find(a => a.id === selectedAtomId);
+        if (!atom) return null;
+        return (
+          <Text
+            position={[atom.x, atom.y + 0.8, atom.z]}
+            fontSize={0.4}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.02}
+            outlineColor="#000000"
+            renderOrder={1000}
+          >
+            {atom.element}
+          </Text>
+        );
+      })()}
+    </>
   );
 }

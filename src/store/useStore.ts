@@ -295,15 +295,26 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
   editHistory: [],
   historyIndex: -1,
 
-  setEditorMode: (mode) => set((state) => ({
-    editor: {
-      ...state.editor,
-      mode,
-      activeTool: mode === 'view' ? 'select' : state.editor.activeTool,
-    },
-    selectedAtomId: null,
-  })),
 
+  setEditorMode: (mode) => set((state) => {
+    const validTools: EditorTool[] = ['select', 'add_atom', 'delete', 'bond', 'erase_bond', 'drag'];
+    const currentToolValid = validTools.includes(state.editor.activeTool);
+    
+    return {
+      editor: {
+        ...state.editor,
+        mode,
+        activeTool: mode === 'view'
+          ? 'select'
+          : (currentToolValid ? state.editor.activeTool : 'select'),
+        bondStartAtomId: mode === 'view' ? null : state.editor.bondStartAtomId,
+        selectedBondId: mode === 'view' ? null : state.editor.selectedBondId,
+        isDragging: mode === 'view' ? false : state.editor.isDragging,
+        dragAtomId: mode === 'view' ? null : state.editor.dragAtomId,
+      },
+      selectedAtomId: null,
+    };
+  }),
   setEditorTool: (tool) => set((state) => ({
     editor: {
       ...state.editor,

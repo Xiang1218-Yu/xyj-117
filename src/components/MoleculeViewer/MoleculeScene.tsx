@@ -124,20 +124,20 @@ function SceneContent({
     }
   }, [isEditMode, editor, pointer, camera, onAddAtom]);
 
+
   const handleSceneClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     if (!isEditMode || !editor) return;
     
-    if (e.target === e.currentTarget || (e.target as any).type === 'ContactShadows') {
-      if (editor.activeTool === 'add_atom' && onAddAtom && previewPosition) {
+    if (editor.activeTool === 'add_atom' && onAddAtom && previewPosition) {
+      if (e.instanceId === undefined) {
         e.stopPropagation();
         onAddAtom(previewPosition.x, previewPosition.y, previewPosition.z);
         setPreviewPosition(null);
-      } else if (editor.activeTool === 'select' && onClearSelection) {
-        onClearSelection();
       }
+    } else if (editor.activeTool === 'select' && onClearSelection && e.instanceId === undefined) {
+      onClearSelection();
     }
   }, [isEditMode, editor, previewPosition, onAddAtom, onClearSelection]);
-
   const handleAtomClick = useCallback((atomId: string) => {
     if (!isEditMode || !editor) {
       onAtomClick(atomId);

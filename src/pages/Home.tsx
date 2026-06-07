@@ -299,7 +299,7 @@ export default function Home() {
         <main className="flex-1 flex flex-col relative overflow-hidden">
           {/* Editor Toolbar */}
           {currentMolecule && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+            <div className="absolute top-14 left-1/2 transform -translate-x-1/2 z-10">
               <EditorToolbar />
             </div>
           )}

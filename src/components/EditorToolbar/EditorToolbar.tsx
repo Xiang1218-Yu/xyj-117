@@ -68,51 +68,51 @@ export function EditorToolbar() {
   };
 
   return (
-    <div className="bg-space-800/90 backdrop-blur-xl border-b border-space-700">
-      <div className="flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-space-700/50 rounded-lg p-1">
+    <div className="bg-space-800/95 backdrop-blur-xl border border-space-700 rounded-xl shadow-2xl">
+      <div className="flex items-center justify-between px-3 py-1.5">
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5 bg-space-700/50 rounded-lg p-0.5">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleModeToggle('view')}
-              className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 text-sm transition-all ${
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1 text-xs transition-all ${
                 editor.mode === 'view'
                   ? 'bg-quantum-blue text-white shadow-lg'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Eye size={14} />
+              <Eye size={12} />
               浏览
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleModeToggle('edit')}
-              className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 text-sm transition-all ${
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1 text-xs transition-all ${
                 editor.mode === 'edit'
                   ? 'bg-gradient-to-r from-quantum-purple to-quantum-cyan text-white shadow-lg'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Edit3 size={14} />
+              <Edit3 size={12} />
               编辑
             </motion.button>
           </div>
 
-          <div className="h-6 w-px bg-space-600 mx-1" />
+          <div className="h-5 w-px bg-space-600 mx-0.5" />
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={createNewEmptyMolecule}
-            className="p-2 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 hover:text-green-300 transition-all"
+            className="p-1.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 hover:text-green-300 transition-all"
             title="创建新分子"
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={14} />
           </motion.button>
 
-          <div className="flex items-center gap-1 bg-space-700/50 rounded-lg p-1">
+          <div className="flex items-center gap-0.5 bg-space-700/50 rounded-lg p-0.5">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -125,7 +125,7 @@ export function EditorToolbar() {
               }`}
               title="撤销 (Ctrl+Z)"
             >
-              <Undo2 size={14} />
+              <Undo2 size={12} />
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -139,7 +139,7 @@ export function EditorToolbar() {
               }`}
               title="重做 (Ctrl+Y)"
             >
-              <Redo2 size={14} />
+              <Redo2 size={12} />
             </motion.button>
           </div>
         </div>
@@ -147,12 +147,12 @@ export function EditorToolbar() {
         <AnimatePresence mode="wait">
           {editor.mode === 'edit' && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-4"
+              exit={{ opacity: 0, y: -5 }}
+              className="flex items-center gap-2"
             >
-              <div className="flex items-center gap-1 bg-space-700/50 rounded-lg p-1">
+              <div className="flex items-center gap-0.5 bg-space-700/50 rounded-lg p-0.5">
                 {editorTools.map((tool) => {
                   const Icon = tool.icon;
                   return (
@@ -161,20 +161,20 @@ export function EditorToolbar() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setEditorTool(tool.id)}
-                      className={`p-2 rounded-md transition-all ${
+                      className={`p-1.5 rounded-md transition-all ${
                         editor.activeTool === tool.id
                           ? 'bg-quantum-purple text-white shadow-lg'
                           : 'text-gray-400 hover:text-white hover:bg-space-600'
                       }`}
                       title={tool.description}
                     >
-                      <Icon size={16} />
+                      <Icon size={14} />
                     </motion.button>
                   );
                 })}
               </div>
 
-              <div className="h-6 w-px bg-space-600" />
+              <div className="h-5 w-px bg-space-600" />
 
               {editor.activeTool === 'add_atom' && (
                 <div className="relative">
@@ -182,14 +182,14 @@ export function EditorToolbar() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowElementPicker(!showElementPicker)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-space-700/50 border border-space-600 hover:border-quantum-purple/50 transition-all"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-space-700/50 border border-space-600 hover:border-quantum-purple/50 transition-all"
                   >
                     <div
-                      className="w-5 h-5 rounded-full border-2 border-white/30 shadow-inner"
+                      className="w-4 h-4 rounded-full border-2 border-white/30 shadow-inner"
                       style={{ backgroundColor: getAtomColor(editor.selectedElement) }}
                     />
-                    <span className="text-sm font-semibold text-white">{editor.selectedElement}</span>
-                    <ChevronDown size={14} className="text-gray-400" />
+                    <span className="text-xs font-semibold text-white">{editor.selectedElement}</span>
+                    <ChevronDown size={12} className="text-gray-400" />
                   </motion.button>
 
                   <AnimatePresence>
@@ -198,9 +198,9 @@ export function EditorToolbar() {
                         initial={{ opacity: 0, y: -5, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                        className="absolute top-full mt-2 right-0 p-3 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50"
+                        className="absolute top-full mt-1.5 right-0 p-2.5 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50"
                       >
-                        <p className="text-xs text-gray-400 mb-2 px-1">选择元素</p>
+                        <p className="text-[10px] text-gray-400 mb-1.5 px-1">选择元素</p>
                         <div className="grid grid-cols-8 gap-1 max-w-xs">
                           {commonElements.map((el) => (
                             <motion.button
@@ -211,7 +211,7 @@ export function EditorToolbar() {
                                 setSelectedElement(el);
                                 setShowElementPicker(false);
                               }}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold transition-all ${
                                 editor.selectedElement === el
                                   ? 'ring-2 ring-quantum-purple scale-110'
                                   : 'hover:ring-1 hover:ring-white/30'
@@ -233,16 +233,16 @@ export function EditorToolbar() {
               )}
 
               {(editor.activeTool === 'bond' || editor.activeTool === 'add_atom') && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {editor.activeTool === 'bond' && (
-                    <div className="flex items-center gap-1 bg-space-700/50 rounded-lg p-1">
+                    <div className="flex items-center gap-0.5 bg-space-700/50 rounded-lg p-0.5">
                       {bondOrders.map((order) => (
                         <motion.button
                           key={order.id}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setBondOrder(order.id)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all ${
                             editor.bondOrder === order.id
                               ? 'bg-quantum-cyan text-white'
                               : 'text-gray-400 hover:text-white hover:bg-space-600'
@@ -254,29 +254,29 @@ export function EditorToolbar() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={editor.autoBond}
                         onChange={toggleAutoBond}
-                        className="w-4 h-4 accent-quantum-purple rounded"
+                        className="w-3.5 h-3.5 accent-quantum-purple rounded"
                       />
-                      <span className="text-xs text-gray-400 group-hover:text-white transition-colors flex items-center gap-1">
-                        <Zap size={12} className="text-quantum-purple" />
+                      <span className="text-[10px] text-gray-400 group-hover:text-white transition-colors flex items-center gap-0.5">
+                        <Zap size={10} className="text-quantum-purple" />
                         自动成键
                       </span>
                     </label>
 
-                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                    <label className="flex items-center gap-1 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={editor.showHydrogenOnAdd}
                         onChange={toggleShowHydrogenOnAdd}
-                        className="w-4 h-4 accent-quantum-cyan rounded"
+                        className="w-3.5 h-3.5 accent-quantum-cyan rounded"
                       />
-                      <span className="text-xs text-gray-400 group-hover:text-white transition-colors flex items-center gap-1">
-                        <Sparkles size={12} className="text-quantum-cyan" />
+                      <span className="text-[10px] text-gray-400 group-hover:text-white transition-colors flex items-center gap-0.5">
+                        <Sparkles size={10} className="text-quantum-cyan" />
                         自动加氢
                       </span>
                     </label>
@@ -286,11 +286,11 @@ export function EditorToolbar() {
 
               {editor.bondStartAtomId && (
                 <motion.div
-                  initial={{ opacity: 0, x: 10 }}
+                  initial={{ opacity: 0, x: 5 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="px-3 py-1.5 rounded-lg bg-quantum-purple/20 border border-quantum-purple/50 text-quantum-purple text-sm font-medium"
+                  className="px-2 py-1 rounded-lg bg-quantum-purple/20 border border-quantum-purple/50 text-quantum-purple text-xs font-medium"
                 >
-                  请选择第二个原子以创建键
+                  选择第二个原子
                 </motion.div>
               )}
             </motion.div>
@@ -304,15 +304,14 @@ export function EditorToolbar() {
           animate={{ height: 'auto', opacity: 1 }}
           className="overflow-hidden border-t border-space-700/50"
         >
-          <div className="px-4 py-1.5 bg-space-900/50">
-            <p className="text-xs text-gray-500">
-              {editor.activeTool === 'select' && '点击原子或键查看并编辑其属性。拖拽可以旋转视图。'}
-              {editor.activeTool === 'add_atom' && `在3D视图中点击放置 ${editor.selectedElement} 原子。${editor.autoBond ? '靠近已有原子时会自动创建键。' : ''}`}
-              {editor.activeTool === 'delete' && '点击原子或键将其删除。删除原子会同时删除连接的键。'}
-              {editor.activeTool === 'bond' && '依次点击两个原子创建化学键。当前键级：' + 
-                (editor.bondOrder === 'aromatic' ? '芳香键' : editor.bondOrder + '级键')}
-              {editor.activeTool === 'erase_bond' && '点击化学键将其删除，不会删除原子。'}
-              {editor.activeTool === 'drag' && '按住并拖拽原子可以调整其位置。'}
+          <div className="px-3 py-1 bg-space-900/50">
+            <p className="text-[10px] text-gray-500">
+              {editor.activeTool === 'select' && '点击原子或键查看属性。'}
+              {editor.activeTool === 'add_atom' && `点击放置 ${editor.selectedElement} 原子${editor.autoBond ? '，靠近时自动成键' : ''}。`}
+              {editor.activeTool === 'delete' && '点击原子或键删除。'}
+              {editor.activeTool === 'bond' && '点击两个原子创建' + (editor.bondOrder === 'aromatic' ? '芳香键' : editor.bondOrder + '键') + '。'}
+              {editor.activeTool === 'erase_bond' && '点击键删除。'}
+              {editor.activeTool === 'drag' && '拖拽原子调整位置。'}
             </p>
           </div>
         </motion.div>
