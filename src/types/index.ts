@@ -198,3 +198,62 @@ export interface EditHistoryEntry {
   after: any;
   timestamp: number;
 }
+
+export type PropertyCalculationType = 'quantum' | 'admet' | 'drug_likeness' | 'all';
+
+export type DescriptorCategory = 'electronic' | 'structural' | 'topological' | 'physicochemical';
+
+export interface QuantumDescriptor {
+  name: string;
+  value: number;
+  unit?: string;
+  description?: string;
+  category: DescriptorCategory;
+}
+
+export type ADMETCategory = 'absorption' | 'distribution' | 'metabolism' | 'excretion' | 'toxicity';
+
+export type ADMETStatus = 'good' | 'moderate' | 'poor' | 'unknown';
+
+export interface ADMETProperty {
+  name: string;
+  category: ADMETCategory;
+  prediction: string;
+  probability: number;
+  status: ADMETStatus;
+  description?: string;
+  reference?: string;
+}
+
+export interface DrugLikenessRule {
+  ruleName: string;
+  passed: boolean;
+  score: number;
+  details: string;
+  threshold?: string;
+}
+
+export interface DrugLikenessResult {
+  overallScore: number;
+  rules: DrugLikenessRule[];
+  summary: string;
+}
+
+export interface PropertyCalculationState {
+  isCalculating: boolean;
+  selectedTypes: PropertyCalculationType[];
+  quantumDescriptors: QuantumDescriptor[] | null;
+  admetProperties: ADMETProperty[] | null;
+  drugLikeness: DrugLikenessResult | null;
+  error: string | null;
+  calculatedAt: Date | null;
+}
+
+export interface PDFExportConfig {
+  includeMoleculeInfo: boolean;
+  includeQuantum: boolean;
+  includeADMET: boolean;
+  includeDrugLikeness: boolean;
+  include3DScreenshot: boolean;
+  pageSize: 'a4' | 'letter';
+}

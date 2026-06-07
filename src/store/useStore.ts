@@ -22,6 +22,11 @@ import {
   LineConfig,
   StickConfig,
   PointCloudConfig,
+  PropertyCalculationType,
+  QuantumDescriptor,
+  ADMETProperty,
+  DrugLikenessResult,
+  PropertyCalculationState,
 } from '../types';
 import { moleculeLibrary, caffeineMolecule } from '../data/molecules';
 import {
@@ -130,6 +135,21 @@ interface EditorStore {
   clearEditorSelection: () => void;
   undoEdit: () => void;
   redoEdit: () => void;
+}
+
+interface PropertyCalculationStore {
+  propertyCalculation: PropertyCalculationState;
+  isExportingPDF: boolean;
+  setSelectedCalculationTypes: (types: PropertyCalculationType[]) => void;
+  toggleCalculationType: (type: PropertyCalculationType) => void;
+  startCalculation: () => void;
+  setCalculationError: (error: string | null) => void;
+  setQuantumDescriptors: (descriptors: QuantumDescriptor[]) => void;
+  setADMETProperties: (properties: ADMETProperty[]) => void;
+  setDrugLikeness: (result: DrugLikenessResult) => void;
+  completeCalculation: () => void;
+  resetPropertyCalculation: () => void;
+  setExportingPDF: (exporting: boolean) => void;
 }
 
 const defaultSimulationParams: SimulationParameters = {
@@ -276,7 +296,7 @@ const defaultPresets: DisplayPreset[] = [
   },
 ];
 
-export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore>((set, get) => ({
+export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore>((set, get) => ({
   currentMolecule: caffeineMolecule,
   currentAtoms: caffeineMolecule.atoms,
   selectedAtomId: null,
@@ -975,6 +995,111 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
       historyIndex: nextIndex,
     });
   },
+
+  propertyCalculation: {
+    isCalculating: false,
+    selectedTypes: ['all'],
+    quantumDescriptors: null,
+    admetProperties: null,
+    drugLikeness: null,
+    error: null,
+    calculatedAt: null,
+  },
+
+  isExportingPDF: false,
+
+  setSelectedCalculationTypes: (types) => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      selectedTypes: types,
+    },
+  })),
+
+  toggleCalculationType: (type) => set((state) => {
+    const currentTypes = state.propertyCalculation.selectedTypes;
+    let newTypes: PropertyCalculationType[];
+    
+    if (type === 'all') {
+      newTypes = currentTypes.includes('all') ? [] : ['all'];
+    } else {
+      const withoutAll = currentTypes.filter(t => t !== 'all');
+      if (withoutAll.includes(type)) {
+        newTypes = withoutAll.filter(t => t !== type);
+      } else {
+        newTypes = [...withoutAll, type];
+      }
+    }
+    
+    return {
+      propertyCalculation: {
+        ...state.propertyCalculation,
+        selectedTypes: newTypes,
+      },
+    };
+  }),
+
+  startCalculation: () => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      isCalculating: true,
+      error: null,
+      quantumDescriptors: null,
+      admetProperties: null,
+      drugLikeness: null,
+      calculatedAt: null,
+    },
+  })),
+
+  setCalculationError: (error) => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      isCalculating: false,
+      error,
+    },
+  })),
+
+  setQuantumDescriptors: (descriptors) => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      quantumDescriptors: descriptors,
+    },
+  })),
+
+  setADMETProperties: (properties) => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      admetProperties: properties,
+    },
+  })),
+
+  setDrugLikeness: (result) => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      drugLikeness: result,
+    },
+  })),
+
+  completeCalculation: () => set((state) => ({
+    propertyCalculation: {
+      ...state.propertyCalculation,
+      isCalculating: false,
+      calculatedAt: new Date(),
+    },
+  })),
+
+  resetPropertyCalculation: () => set({
+    propertyCalculation: {
+      isCalculating: false,
+      selectedTypes: ['all'],
+      quantumDescriptors: null,
+      admetProperties: null,
+      drugLikeness: null,
+      error: null,
+      calculatedAt: null,
+    },
+  }),
+
+  setExportingPDF: (exporting) => set({ isExportingPDF: exporting }),
 }));
 
 export { moleculeLibrary };

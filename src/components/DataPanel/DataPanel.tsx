@@ -32,10 +32,12 @@ import {
   Share2,
   Maximize2,
   Minimize2,
-  Check
+  Check,
+  Calculator
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { getAtomColor } from '../../utils/atomColors';
+import { PropertyCalculationPanel } from '../PropertyCards/PropertyCalculationPanel';
 
 interface DataPoint {
   step: number;
@@ -43,6 +45,8 @@ interface DataPoint {
   rmsd?: number;
   rg?: number;
 }
+
+type DataPanelTab = 'realtime' | 'properties';
 
 export function DataPanel() {
   const {
@@ -58,6 +62,7 @@ export function DataPanel() {
 
   const [expandedSection, setExpandedSection] = useState<string | null>('energy');
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<DataPanelTab>('realtime');
   const isFullscreen = dataPanelFullscreen;
 
   const handleExport = useCallback(() => {
@@ -206,14 +211,33 @@ export function DataPanel() {
     return num.toFixed(2);
   };
 
+  const tabs = [
+    { id: 'realtime' as DataPanelTab, label: '实时数据分析', icon: Activity, color: 'text-quantum-cyan' },
+    { id: 'properties' as DataPanelTab, label: '分子性质计算', icon: Calculator, color: 'text-quantum-purple' },
+  ];
+
   return (
     <div className={`h-full flex flex-col bg-space-800/80 backdrop-blur-xl border-t border-space-700 transition-all ${
       isFullscreen ? 'fixed inset-0 z-50' : ''
     }`}>
       <div className="flex items-center justify-between p-3 border-b border-space-700">
-        <div className="flex items-center gap-2">
-          <Activity size={18} className="text-quantum-cyan" />
-          <h2 className="font-display text-lg font-bold text-white">实时数据分析</h2>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {tabs.map(({ id, label, icon: Icon, color }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === id
+                    ? `bg-space-700 ${color}`
+                    : 'text-gray-400 hover:text-white hover:bg-space-700/50'
+                }`}
+              >
+                <Icon size={16} />
+                <span className="font-semibold text-sm">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -250,7 +274,16 @@ export function DataPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <AnimatePresence mode="wait">
+        {activeTab === 'realtime' && (
+          <motion.div
+            key="realtime"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 overflow-y-auto p-3 space-y-2"
+          >
         <div className="grid grid-cols-4 gap-2">
           <motion.div 
             whileHover={{ scale: 1.02 }}
@@ -718,7 +751,22 @@ export function DataPanel() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'properties' && (
+          <motion.div
+            key="properties"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 overflow-hidden"
+          >
+            <PropertyCalculationPanel />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
