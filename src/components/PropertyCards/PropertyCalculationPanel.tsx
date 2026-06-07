@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import { calculateAllProperties } from '../../utils/propertyCalculator';
 import { exportPropertyReport } from '../../utils/pdfExporter';
+import { Portal } from '../common/Portal';
 import { QuantumDescriptorsCard } from './QuantumDescriptorsCard';
 import { ADMETCard } from './ADMETCard';
 import { DrugLikenessCard } from './DrugLikenessCard';
@@ -261,21 +262,23 @@ export function PropertyCalculationPanel() {
 
       <AnimatePresence>
         {showExportModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
-            style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-            onClick={() => setShowExportModal(false)}
-          >
+          <Portal>
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed top-0 left-0 w-screen h-screen bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+              style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', margin: 0, padding: 0 }}
+              onClick={() => setShowExportModal(false)}
             >
+              <motion.div
+                initial={{ scale: 0.9, y: 30, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 30, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl"
+                style={{ margin: 'auto', position: 'relative' }}
+              >
               <div className="p-4 border-b border-slate-700/50">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <FileText className="w-5 h-5 text-emerald-400" />
@@ -378,6 +381,7 @@ export function PropertyCalculationPanel() {
               </div>
             </motion.div>
           </motion.div>
+          </Portal>
         )}
       </AnimatePresence>
     </div>

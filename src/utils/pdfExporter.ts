@@ -1,38 +1,20 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Molecule, PDFExportConfig } from '../types';
-import { addChineseFont, setChineseFont } from './fonts';
+import { addChineseFont } from './fonts';
 
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const MARGIN = 10;
-
-async function createTextCanvas(text: string, fontSize: number = 16, isBold: boolean = false): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
-
-  const font = `${isBold ? 'bold ' : ''}${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif`;
-  ctx.font = font;
-  const metrics = ctx.measureText(text);
-  canvas.width = Math.ceil(metrics.width) + 20;
-  canvas.height = Math.ceil(fontSize * 1.5) + 10;
-
-  const ctx2 = canvas.getContext('2d');
-  if (!ctx2) return '';
-  
-  ctx2.fillStyle = '#ffffff';
-  ctx2.font = font;
-  ctx2.textBaseline = 'middle';
-  ctx2.fillText(text, 10, canvas.height / 2);
-
-  return canvas.toDataURL('image/png');
-}
+const HEADER_HEIGHT = 25;
+const FOOTER_HEIGHT = 8;
+const CONTENT_TOP = MARGIN + HEADER_HEIGHT;
+const CONTENT_MAX_HEIGHT = PAGE_HEIGHT - MARGIN - HEADER_HEIGHT - FOOTER_HEIGHT;
 
 async function createHeaderCanvas(moleculeName: string, pageInfo?: string): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
-  canvas.height = 100;
+  canvas.height = 140;
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
@@ -40,19 +22,19 @@ async function createHeaderCanvas(moleculeName: string, pageInfo?: string): Prom
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 48px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+  ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
   ctx.textBaseline = 'middle';
-  ctx.fillText('分子性质报告', 40, 35);
+  ctx.fillText('分子性质报告', 40, 45);
 
-  ctx.font = '28px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+  ctx.font = '30px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
   ctx.fillStyle = '#e2e8f0';
-  ctx.fillText(`分子: ${moleculeName}`, 40, 75);
+  ctx.fillText(`分子: ${moleculeName}`, 40, 95);
 
   if (pageInfo) {
     ctx.textAlign = 'right';
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
-    ctx.fillText(pageInfo, canvas.width - 40, 35);
+    ctx.font = '26px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+    ctx.fillText(pageInfo, canvas.width - 40, 45);
     ctx.textAlign = 'left';
   }
 
@@ -62,7 +44,7 @@ async function createHeaderCanvas(moleculeName: string, pageInfo?: string): Prom
 async function createFooterCanvas(dateStr: string, timeStr: string): Promise<string> {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
-  canvas.height = 50;
+  canvas.height = 60;
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
@@ -70,7 +52,7 @@ async function createFooterCanvas(dateStr: string, timeStr: string): Promise<str
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = '#64748b';
-  ctx.font = '20px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+  ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
   ctx.textBaseline = 'middle';
   ctx.fillText(`由分子性质计算器生成于 ${dateStr} ${timeStr}`, 40, canvas.height / 2);
 
@@ -90,12 +72,23 @@ export async function exportPropertyReport(
 
   addChineseFont(doc);
 
+  const originalScrollTop = contentElement.scrollTop;
+  contentElement.scrollTop = 0;
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   const canvas = await html2canvas(contentElement, {
     backgroundColor: '#0f172a',
     scale: 2,
     useCORS: true,
     logging: false,
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: contentElement.scrollWidth,
+    windowHeight: contentElement.scrollHeight,
   });
+
+  contentElement.scrollTop = originalScrollTop;
 
   const imgData = canvas.toDataURL('image/png');
   
@@ -103,19 +96,13 @@ export async function exportPropertyReport(
   const imgWidth = contentWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  const headerHeight = 25;
-  const footerHeight = 8;
-  const contentTop = MARGIN + headerHeight;
-  const contentMaxHeight = PAGE_HEIGHT - MARGIN - headerHeight - footerHeight;
-
   const date = new Date();
   const dateStr = date.toLocaleDateString();
   const timeStr = date.toLocaleTimeString();
 
-  let heightLeft = imgHeight;
-  let position = contentTop;
+  const totalPages = Math.ceil(imgHeight / CONTENT_MAX_HEIGHT);
 
-  const totalPages = Math.ceil(imgHeight / contentMaxHeight);
+  const pxPerMm = canvas.height / imgHeight;
 
   for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
     if (currentPage > 1) {
@@ -124,34 +111,39 @@ export async function exportPropertyReport(
 
     const pageInfo = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
     const headerImgData = await createHeaderCanvas(molecule.name, pageInfo);
-    doc.addImage(headerImgData, 'PNG', 0, 0, PAGE_WIDTH, headerHeight);
+    doc.addImage(headerImgData, 'PNG', 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
 
-    const yOffset = (currentPage - 1) * contentMaxHeight;
-    const sourceY = yOffset * (canvas.height / imgHeight);
-    const sourceHeight = Math.min(
-      contentMaxHeight * (canvas.height / imgHeight),
-      canvas.height - sourceY
-    );
+    const pageContentStartMm = (currentPage - 1) * CONTENT_MAX_HEIGHT;
+    const pageContentStartPx = pageContentStartMm * pxPerMm;
 
-    if (sourceHeight > 0) {
+    const pageContentHeightMm = Math.min(CONTENT_MAX_HEIGHT, imgHeight - pageContentStartMm);
+    const pageContentHeightPx = pageContentHeightMm * pxPerMm;
+
+    if (pageContentHeightPx > 0 && pageContentStartPx < canvas.height) {
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
-      tempCanvas.height = sourceHeight;
+      tempCanvas.height = Math.min(pageContentHeightPx, canvas.height - pageContentStartPx);
+      
       const tempCtx = tempCanvas.getContext('2d');
       if (tempCtx) {
+        tempCtx.fillStyle = '#0f172a';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        const sourceHeight = Math.min(pageContentHeightPx, canvas.height - pageContentStartPx);
         tempCtx.drawImage(
           canvas,
-          0, sourceY, canvas.width, sourceHeight,
+          0, pageContentStartPx, canvas.width, sourceHeight,
           0, 0, canvas.width, sourceHeight
         );
+        
         const pageImgData = tempCanvas.toDataURL('image/png');
-        const pageImgHeight = (sourceHeight * imgWidth) / canvas.width;
-        doc.addImage(pageImgData, 'PNG', MARGIN, contentTop, imgWidth, pageImgHeight);
+        const pageImgHeight = (tempCanvas.height * imgWidth) / canvas.width;
+        doc.addImage(pageImgData, 'PNG', MARGIN, CONTENT_TOP, imgWidth, pageImgHeight);
       }
     }
 
     const footerImgData = await createFooterCanvas(dateStr, timeStr);
-    doc.addImage(footerImgData, 'PNG', 0, PAGE_HEIGHT - footerHeight, PAGE_WIDTH, footerHeight);
+    doc.addImage(footerImgData, 'PNG', 0, PAGE_HEIGHT - FOOTER_HEIGHT, PAGE_WIDTH, FOOTER_HEIGHT);
   }
 
   const fileName = `${molecule.name.replace(/\s+/g, '_')}_性质报告.pdf`;
