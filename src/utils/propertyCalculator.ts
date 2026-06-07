@@ -281,144 +281,144 @@ export function calculateQuantumDescriptors(molecule: Molecule): QuantumDescript
 
   return [
     {
-      name: 'Molecular Weight',
+      name: '分子量',
       value: molecularWeight,
       unit: 'g/mol',
-      description: 'Sum of atomic weights of all atoms in the molecule',
+      description: '分子中所有原子的原子量之和',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Molecular Formula',
+      name: '分子式',
       value: parseFloat(elementCounts['C']?.toString() || '0'),
-      description: 'Chemical formula of the molecule',
+      description: '分子的化学式',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Heavy Atom Count',
+      name: '重原子数',
       value: heavyAtomCount,
-      description: 'Number of non-hydrogen atoms',
+      description: '非氢原子的数量',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Total Atom Count',
+      name: '总原子数',
       value: atoms.length,
-      description: 'Total number of atoms in the molecule',
+      description: '分子中的原子总数',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Bond Count',
+      name: '键数',
       value: bonds.length,
-      description: 'Total number of chemical bonds',
+      description: '化学键的总数',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Ring Count',
+      name: '环数',
       value: ringCount,
-      description: 'Number of rings in the molecular structure',
+      description: '分子结构中的环数量',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Aromatic Ring Count',
+      name: '芳香环数',
       value: aromaticRings,
-      description: 'Number of aromatic rings',
+      description: '芳香环的数量',
       category: 'structural' as DescriptorCategory,
     },
     {
-      name: 'Rotatable Bonds',
+      name: '可旋转键',
       value: rotatableBonds,
-      description: 'Number of single bonds that can rotate freely',
+      description: '可自由旋转的单键数量',
       category: 'topological' as DescriptorCategory,
     },
     {
-      name: 'Topological Index',
+      name: '拓扑指数',
       value: topologicalIndex,
       unit: 'Å',
-      description: 'Wiener topological index',
+      description: 'Wiener拓扑指数',
       category: 'topological' as DescriptorCategory,
     },
     {
-      name: 'Molecular Complexity',
+      name: '分子复杂度',
       value: complexity,
-      description: 'Overall complexity based on atoms and bond types',
+      description: '基于原子和键类型的整体复杂度',
       category: 'topological' as DescriptorCategory,
     },
     {
-      name: 'H-Bond Donors',
+      name: '氢键供体',
       value: hDonors,
-      description: 'Number of hydrogen bond donors (N-H, O-H)',
+      description: '氢键供体数量 (N-H, O-H)',
       category: 'physicochemical' as DescriptorCategory,
     },
     {
-      name: 'H-Bond Acceptors',
+      name: '氢键受体',
       value: hAcceptors,
-      description: 'Number of hydrogen bond acceptors (N, O atoms)',
+      description: '氢键受体数量 (N, O原子)',
       category: 'physicochemical' as DescriptorCategory,
     },
     {
-      name: 'Polar Surface Area',
+      name: '极性表面积',
       value: psa,
       unit: 'Å²',
-      description: 'Topological polar surface area (TPSA)',
+      description: '拓扑极性表面积 (TPSA)',
       category: 'physicochemical' as DescriptorCategory,
     },
     {
       name: 'logP',
       value: logP,
-      description: 'Calculated octanol-water partition coefficient',
+      description: '计算的辛醇-水分配系数',
       category: 'physicochemical' as DescriptorCategory,
     },
     {
-      name: 'Molar Refractivity',
+      name: '摩尔折射率',
       value: molarRefractivity,
       unit: 'cm³/mol',
-      description: 'Molar refractivity (MR)',
+      description: '摩尔折射率 (MR)',
       category: 'physicochemical' as DescriptorCategory,
     },
     {
-      name: 'Polarizability',
+      name: '极化率',
       value: polarizability,
       unit: 'Å³',
-      description: 'Calculated molecular polarizability',
+      description: '计算的分子极化率',
       category: 'electronic' as DescriptorCategory,
     },
     {
-      name: 'Dipole Moment',
+      name: '偶极矩',
       value: dipoleMoment,
       unit: 'D',
-      description: 'Estimated molecular dipole moment',
+      description: '估算的分子偶极矩',
       category: 'electronic' as DescriptorCategory,
     },
     {
-      name: 'HOMO Energy',
+      name: 'HOMO能级',
       value: homo,
       unit: 'eV',
-      description: 'Highest Occupied Molecular Orbital energy',
+      description: '最高占据分子轨道能量',
       category: 'electronic' as DescriptorCategory,
     },
     {
-      name: 'LUMO Energy',
+      name: 'LUMO能级',
       value: lumo,
       unit: 'eV',
-      description: 'Lowest Unoccupied Molecular Orbital energy',
+      description: '最低未占据分子轨道能量',
       category: 'electronic' as DescriptorCategory,
     },
     {
-      name: 'HOMO-LUMO Gap',
+      name: 'HOMO-LUMO能隙',
       value: bandGap,
       unit: 'eV',
-      description: 'Energy gap between HOMO and LUMO',
+      description: 'HOMO与LUMO之间的能量差',
       category: 'electronic' as DescriptorCategory,
     },
   ];
 }
 
 function predictAbsorption(descriptors: QuantumDescriptor[]): ADMETProperty[] {
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const psa = descriptors.find(d => d.name === 'Polar Surface Area')?.value || 0;
-  const hDonors = descriptors.find(d => d.name === 'H-Bond Donors')?.value || 0;
-  const hAcceptors = descriptors.find(d => d.name === 'H-Bond Acceptors')?.value || 0;
-  const rotatableBonds = descriptors.find(d => d.name === 'Rotatable Bonds')?.value || 0;
+  const psa = descriptors.find(d => d.name === '极性表面积')?.value || 0;
+  const hDonors = descriptors.find(d => d.name === '氢键供体')?.value || 0;
+  const hAcceptors = descriptors.find(d => d.name === '氢键受体')?.value || 0;
+  const rotatableBonds = descriptors.find(d => d.name === '可旋转键')?.value || 0;
 
   const intestinalScore = Math.max(0, Math.min(1, 
     1 - Math.abs(logP) * 0.1 - psa * 0.005 - rotatableBonds * 0.02
@@ -464,30 +464,30 @@ function predictAbsorption(descriptors: QuantumDescriptor[]): ADMETProperty[] {
 
   return [
     {
-      name: 'Intestinal Absorption',
+      name: '肠道吸收',
       category: 'absorption' as ADMETCategory,
       prediction: `${intestinalPred} (${Math.round(intestinalScore * 100)}%)`,
       probability: Math.round(intestinalScore * 100) / 100,
       status: intestinalStatus,
-      description: 'Predicted oral absorption based on PSA and lipophilicity',
+      description: '基于极性表面积和亲脂性预测的口服吸收',
       reference: 'Zhao et al., 2003',
     },
     {
-      name: 'Water Solubility',
+      name: '水溶性',
       category: 'absorption' as ADMETCategory,
       prediction: `${solubilityPred} (${Math.round(waterSolubility * 100)}%)`,
       probability: Math.round(waterSolubility * 100) / 100,
       status: solubilityStatus,
-      description: 'Estimated aqueous solubility at pH 7.4',
-      reference: 'ESOL model',
+      description: 'pH 7.4条件下估算的水溶性',
+      reference: 'ESOL模型',
     },
     {
-      name: 'Oral Bioavailability',
+      name: '口服生物利用度',
       category: 'absorption' as ADMETCategory,
       prediction: bioavailPred,
       probability: Math.round(bioavailability * 100) / 100,
       status: bioavailStatus,
-      description: 'Predicted fraction of drug reaching systemic circulation',
+      description: '预测到达体循环的药物比例',
       reference: 'Lipinski et al., 2001',
     },
   ];
@@ -495,8 +495,8 @@ function predictAbsorption(descriptors: QuantumDescriptor[]): ADMETProperty[] {
 
 function predictDistribution(descriptors: QuantumDescriptor[]): ADMETProperty[] {
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const psa = descriptors.find(d => d.name === 'Polar Surface Area')?.value || 0;
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
+  const psa = descriptors.find(d => d.name === '极性表面积')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
 
   const bbbScore = Math.max(0, Math.min(1,
     1 - psa * 0.008 - Math.abs(logP - 2) * 0.15
@@ -541,40 +541,40 @@ function predictDistribution(descriptors: QuantumDescriptor[]): ADMETProperty[] 
 
   return [
     {
-      name: 'Blood-Brain Barrier',
+      name: '血脑屏障穿透',
       category: 'distribution' as ADMETCategory,
       prediction: bbbPred,
       probability: Math.round(bbbScore * 100) / 100,
       status: bbbStatus,
-      description: 'Predicted ability to cross the blood-brain barrier',
-      reference: 'PAMPA-BBB model',
+      description: '预测穿透血脑屏障的能力',
+      reference: 'PAMPA-BBB模型',
     },
     {
-      name: 'Volume of Distribution',
+      name: '分布容积',
       category: 'distribution' as ADMETCategory,
       prediction: vdssPred,
       probability: Math.round(vdssNorm * 100) / 100,
       status: vdssStatus,
-      description: 'Predicted steady-state volume of distribution',
-      reference: 'PK-Sim model',
+      description: '预测稳态分布容积',
+      reference: 'PK-Sim模型',
     },
     {
-      name: 'Plasma Protein Binding',
+      name: '血浆蛋白结合',
       category: 'distribution' as ADMETCategory,
       prediction: ppbPred,
       probability: Math.round(ppbScore * 100) / 100,
       status: ppbStatus,
-      description: 'Predicted fraction bound to plasma proteins',
-      reference: 'Affinity-based model',
+      description: '预测与血浆蛋白结合的比例',
+      reference: '基于亲和力模型',
     },
   ];
 }
 
 function predictMetabolism(descriptors: QuantumDescriptor[]): ADMETProperty[] {
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
-  const aromaticRings = descriptors.find(d => d.name === 'Aromatic Ring Count')?.value || 0;
-  const hDonors = descriptors.find(d => d.name === 'H-Bond Donors')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
+  const aromaticRings = descriptors.find(d => d.name === '芳香环数')?.value || 0;
+  const hDonors = descriptors.find(d => d.name === '氢键供体')?.value || 0;
 
   const cyp3a4Score = Math.max(0, Math.min(1,
     0.3 + logP * 0.1 + aromaticRings * 0.05
@@ -620,39 +620,39 @@ function predictMetabolism(descriptors: QuantumDescriptor[]): ADMETProperty[] {
 
   return [
     {
-      name: 'CYP3A4 Substrate',
+      name: 'CYP3A4底物',
       category: 'metabolism' as ADMETCategory,
       prediction: cyp3a4Pred,
       probability: Math.round(cyp3a4Score * 100) / 100,
       status: cyp3a4Status,
-      description: 'Predicted CYP3A4 enzyme substrate potential',
-      reference: 'Mutagen model',
+      description: '预测CYP3A4酶底物可能性',
+      reference: 'Mutagen模型',
     },
     {
-      name: 'CYP2D6 Inhibition',
+      name: 'CYP2D6抑制',
       category: 'metabolism' as ADMETCategory,
       prediction: cyp2d6Pred,
       probability: Math.round(cyp2d6Score * 100) / 100,
       status: cyp2d6Status,
-      description: 'Predicted CYP2D6 enzyme inhibition',
-      reference: 'Fingerprint-based model',
+      description: '预测CYP2D6酶抑制作用',
+      reference: '基于指纹模型',
     },
     {
-      name: 'Metabolic Stability',
+      name: '代谢稳定性',
       category: 'metabolism' as ADMETCategory,
       prediction: metPred,
       probability: Math.round(metStability * 100) / 100,
       status: metStatus,
-      description: 'Predicted stability in liver microsomes',
-      reference: 'Hepatic clearance model',
+      description: '预测在肝微粒体中的稳定性',
+      reference: '肝清除率模型',
     },
   ];
 }
 
 function predictExcretion(descriptors: QuantumDescriptor[]): ADMETProperty[] {
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const psa = descriptors.find(d => d.name === 'Polar Surface Area')?.value || 0;
+  const psa = descriptors.find(d => d.name === '极性表面积')?.value || 0;
 
   const renalClearance = Math.max(0, Math.min(1,
     1 - mw * 0.001 - Math.abs(logP) * 0.1
@@ -695,41 +695,41 @@ function predictExcretion(descriptors: QuantumDescriptor[]): ADMETProperty[] {
 
   return [
     {
-      name: 'Renal Clearance',
+      name: '肾清除率',
       category: 'excretion' as ADMETCategory,
       prediction: renalPred,
       probability: Math.round(renalClearance * 100) / 100,
       status: renalStatus,
-      description: 'Predicted renal clearance rate',
-      reference: 'GFR-based model',
+      description: '预测肾脏清除率',
+      reference: '基于GFR模型',
     },
     {
-      name: 'Half-Life',
+      name: '半衰期',
       category: 'excretion' as ADMETCategory,
       prediction: hlPred,
       probability: Math.round(halfLifeNorm * 100) / 100,
       status: hlStatus,
-      description: 'Predicted elimination half-life',
-      reference: 'PK model integration',
+      description: '预测消除半衰期',
+      reference: 'PK模型整合',
     },
     {
-      name: 'Biliary Excretion',
+      name: '胆汁排泄',
       category: 'excretion' as ADMETCategory,
       prediction: biliaryPred,
       probability: Math.round(biliaryScore * 100) / 100,
       status: biliaryStatus,
-      description: 'Predicted biliary excretion potential',
-      reference: 'Molecular weight threshold model',
+      description: '预测胆汁排泄潜力',
+      reference: '分子量阈值模型',
     },
   ];
 }
 
 function predictToxicity(descriptors: QuantumDescriptor[]): ADMETProperty[] {
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
-  const hAcceptors = descriptors.find(d => d.name === 'H-Bond Acceptors')?.value || 0;
-  const aromaticRings = descriptors.find(d => d.name === 'Aromatic Ring Count')?.value || 0;
-  const hDonors = descriptors.find(d => d.name === 'H-Bond Donors')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
+  const hAcceptors = descriptors.find(d => d.name === '氢键受体')?.value || 0;
+  const aromaticRings = descriptors.find(d => d.name === '芳香环数')?.value || 0;
+  const hDonors = descriptors.find(d => d.name === '氢键供体')?.value || 0;
 
   const hergScore = Math.max(0, Math.min(1,
     0.1 + logP * 0.15 + hAcceptors * 0.03
@@ -789,39 +789,39 @@ function predictToxicity(descriptors: QuantumDescriptor[]): ADMETProperty[] {
 
   return [
     {
-      name: 'hERG Inhibition',
+      name: 'hERG抑制',
       category: 'toxicity' as ADMETCategory,
       prediction: hergPred,
       probability: Math.round(hergScore * 100) / 100,
       status: hergStatus,
-      description: 'Predicted potassium channel (hERG) inhibition risk',
+      description: '预测钾通道(hERG)抑制风险',
       reference: 'Doddareddy et al., 2006',
     },
     {
-      name: 'Hepatotoxicity',
+      name: '肝毒性',
       category: 'toxicity' as ADMETCategory,
       prediction: hepatoPred,
       probability: Math.round(hepatoScore * 100) / 100,
       status: hepatoStatus,
-      description: 'Predicted liver toxicity risk',
+      description: '预测肝脏毒性风险',
       reference: 'Liu et al., 2011',
     },
     {
-      name: 'Carcinogenicity',
+      name: '致癌性',
       category: 'toxicity' as ADMETCategory,
       prediction: carcinoPred,
       probability: Math.round(carcinogenicScore * 100) / 100,
       status: carcinoStatus,
-      description: 'Predicted carcinogenic potential',
-      reference: 'ISSSTY database model',
+      description: '预测致癌潜力',
+      reference: 'ISSSTY数据库模型',
     },
     {
-      name: 'Mutagenicity',
+      name: '致突变性',
       category: 'toxicity' as ADMETCategory,
       prediction: mutaPred,
       probability: Math.round(mutagenicScore * 100) / 100,
       status: mutaStatus,
-      description: 'Predicted mutagenic potential (Ames test)',
+      description: '预测致突变潜力(Ames试验)',
       reference: 'Benigni et al., 2009',
     },
   ];
@@ -838,13 +838,13 @@ export function calculateADMETProperties(descriptors: QuantumDescriptor[]): ADME
 }
 
 export function calculateDrugLikeness(molecule: Molecule, descriptors: QuantumDescriptor[]): DrugLikenessResult {
-  const mw = descriptors.find(d => d.name === 'Molecular Weight')?.value || 0;
+  const mw = descriptors.find(d => d.name === '分子量')?.value || 0;
   const logP = descriptors.find(d => d.name === 'logP')?.value || 0;
-  const hDonors = descriptors.find(d => d.name === 'H-Bond Donors')?.value || 0;
-  const hAcceptors = descriptors.find(d => d.name === 'H-Bond Acceptors')?.value || 0;
-  const psa = descriptors.find(d => d.name === 'Polar Surface Area')?.value || 0;
-  const rotatableBonds = descriptors.find(d => d.name === 'Rotatable Bonds')?.value || 0;
-  const molarRefractivity = descriptors.find(d => d.name === 'Molar Refractivity')?.value || 0;
+  const hDonors = descriptors.find(d => d.name === '氢键供体')?.value || 0;
+  const hAcceptors = descriptors.find(d => d.name === '氢键受体')?.value || 0;
+  const psa = descriptors.find(d => d.name === '极性表面积')?.value || 0;
+  const rotatableBonds = descriptors.find(d => d.name === '可旋转键')?.value || 0;
+  const molarRefractivity = descriptors.find(d => d.name === '摩尔折射率')?.value || 0;
   const atoms = molecule.atoms;
   const elementCounts = countElements(atoms);
   const carbonCount = elementCounts['C'] || 0;
@@ -861,20 +861,20 @@ export function calculateDrugLikeness(molecule: Molecule, descriptors: QuantumDe
   ].filter(v => v).length;
 
   rules.push({
-    ruleName: "Lipinski's Rule of Five",
+    ruleName: "Lipinski五规则",
     passed: lipinskiViolations <= 1,
     score: Math.max(0, 100 - lipinskiViolations * 25),
-    details: `MW=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, HBD=${hDonors}, HBA=${hAcceptors}. ${lipinskiViolations} violation(s).`,
-    threshold: 'MW ≤ 500, logP ≤ 5, HBD ≤ 5, HBA ≤ 10',
+    details: `分子量=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, 氢键供体=${hDonors}, 氢键受体=${hAcceptors}. ${lipinskiViolations} 项违规。`,
+    threshold: '分子量 ≤ 500, logP ≤ 5, 氢键供体 ≤ 5, 氢键受体 ≤ 10',
   });
 
   const veberPassed = rotatableBonds <= 10 && psa <= 140;
   rules.push({
-    ruleName: "Veber's Rule",
+    ruleName: "Veber规则",
     passed: veberPassed,
     score: veberPassed ? 100 : 50,
-    details: `Rotatable bonds=${rotatableBonds}, PSA=${psa.toFixed(1)} Å²`,
-    threshold: 'Rotatable bonds ≤ 10, PSA ≤ 140 Å²',
+    details: `可旋转键=${rotatableBonds}, 极性表面积=${psa.toFixed(1)} Å²`,
+    threshold: '可旋转键 ≤ 10, 极性表面积 ≤ 140 Å²',
   });
 
   const ghosePassed = mw >= 160 && mw <= 480 && 
@@ -882,20 +882,20 @@ export function calculateDrugLikeness(molecule: Molecule, descriptors: QuantumDe
                       molarRefractivity >= 40 && molarRefractivity <= 130 &&
                       atoms.length >= 20 && atoms.length <= 70;
   rules.push({
-    ruleName: "Ghose Filter",
+    ruleName: "Ghose过滤器",
     passed: ghosePassed,
     score: ghosePassed ? 100 : 40,
-    details: `MW=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, MR=${molarRefractivity.toFixed(1)}, Atoms=${atoms.length}`,
-    threshold: '160 ≤ MW ≤ 480, -0.4 ≤ logP ≤ 5.6, 40 ≤ MR ≤ 130, 20 ≤ Atoms ≤ 70',
+    details: `分子量=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, 摩尔折射率=${molarRefractivity.toFixed(1)}, 原子数=${atoms.length}`,
+    threshold: '160 ≤ 分子量 ≤ 480, -0.4 ≤ logP ≤ 5.6, 40 ≤ 摩尔折射率 ≤ 130, 20 ≤ 原子数 ≤ 70',
   });
 
   const eganPassed = logP >= -1 && logP <= 6 && psa >= 0 && psa <= 130;
   rules.push({
-    ruleName: "Egan Filter",
+    ruleName: "Egan过滤器",
     passed: eganPassed,
     score: eganPassed ? 100 : 45,
-    details: `logP=${logP.toFixed(1)}, PSA=${psa.toFixed(1)} Å²`,
-    threshold: '-1 ≤ logP ≤ 6, PSA ≤ 130 Å²',
+    details: `logP=${logP.toFixed(1)}, 极性表面积=${psa.toFixed(1)} Å²`,
+    threshold: '-1 ≤ logP ≤ 6, 极性表面积 ≤ 130 Å²',
   });
 
   const mueggePassed = mw >= 200 && mw <= 600 &&
@@ -905,24 +905,24 @@ export function calculateDrugLikeness(molecule: Molecule, descriptors: QuantumDe
                        carbonCount >= 3 &&
                        heteroAtomCount >= 1;
   rules.push({
-    ruleName: "Muegge Filter",
+    ruleName: "Muegge过滤器",
     passed: mueggePassed,
     score: mueggePassed ? 100 : 40,
-    details: `MW=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, C=${carbonCount}, Heteroatoms=${heteroAtomCount}`,
-    threshold: '200 ≤ MW ≤ 600, -2 ≤ logP ≤ 5, C ≥ 3, Heteroatoms ≥ 1',
+    details: `分子量=${mw.toFixed(1)}, logP=${logP.toFixed(1)}, 碳原子数=${carbonCount}, 杂原子数=${heteroAtomCount}`,
+    threshold: '200 ≤ 分子量 ≤ 600, -2 ≤ logP ≤ 5, 碳原子数 ≥ 3, 杂原子数 ≥ 1',
   });
 
   const overallScore = Math.round(rules.reduce((sum, r) => sum + r.score, 0) / rules.length);
 
   let summary = '';
   if (overallScore >= 80) {
-    summary = 'Excellent drug-likeness profile. This molecule meets most medicinal chemistry criteria for oral bioavailability.';
+    summary = '优秀的类药性特征。该分子满足大多数药物化学的口服生物利用度标准。';
   } else if (overallScore >= 60) {
-    summary = 'Good drug-likeness profile. Some minor violations that may be acceptable depending on target class.';
+    summary = '良好的类药性特征。存在一些轻微违规，根据靶点类型可能可以接受。';
   } else if (overallScore >= 40) {
-    summary = 'Moderate drug-likeness. Some properties may need optimization for good pharmacokinetics.';
+    summary = '中等类药性。部分性质可能需要优化以获得良好的药代动力学特性。';
   } else {
-    summary = 'Poor drug-likeness profile. Significant optimization required to improve pharmacokinetic properties.';
+    summary = '较差的类药性特征。需要大量优化以改善药代动力学性质。';
   }
 
   return {

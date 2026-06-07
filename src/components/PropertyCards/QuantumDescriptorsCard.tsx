@@ -7,10 +7,10 @@ interface QuantumDescriptorsCardProps {
 }
 
 const categoryConfig: Record<DescriptorCategory, { icon: typeof Atom; label: string; color: string }> = {
-  electronic: { icon: Zap, label: 'Electronic', color: 'from-purple-500 to-indigo-500' },
-  structural: { icon: Atom, label: 'Structural', color: 'from-blue-500 to-cyan-500' },
-  topological: { icon: Grid3X3, label: 'Topological', color: 'from-emerald-500 to-teal-500' },
-  physicochemical: { icon: FlaskConical, label: 'Physicochemical', color: 'from-amber-500 to-orange-500' },
+  electronic: { icon: Zap, label: '电子性质', color: 'from-purple-500 to-indigo-500' },
+  structural: { icon: Atom, label: '结构性质', color: 'from-blue-500 to-cyan-500' },
+  topological: { icon: Grid3X3, label: '拓扑性质', color: 'from-emerald-500 to-teal-500' },
+  physicochemical: { icon: FlaskConical, label: '物理化学', color: 'from-amber-500 to-orange-500' },
 };
 
 const formatValue = (value: number, name: string): string => {
@@ -38,10 +38,10 @@ export function QuantumDescriptorsCard({ descriptors }: QuantumDescriptorsCardPr
       <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Atom className="w-5 h-5 text-blue-400" />
-          Quantum Chemical Descriptors
+          量子化学描述符
         </h3>
         <p className="text-sm text-slate-400 mt-1">
-          {descriptors.length} molecular descriptors calculated
+          已计算 {descriptors.length} 个分子描述符
         </p>
       </div>
 

@@ -18,18 +18,18 @@ interface ADMETCardProps {
 }
 
 const categoryConfig: Record<ADMETCategory, { icon: typeof Activity; label: string; color: string }> = {
-  absorption: { icon: Activity, label: 'Absorption', color: 'from-emerald-500 to-green-500' },
-  distribution: { icon: ArrowRightLeft, label: 'Distribution', color: 'from-blue-500 to-sky-500' },
-  metabolism: { icon: FlaskRound, label: 'Metabolism', color: 'from-amber-500 to-yellow-500' },
-  excretion: { icon: Droplets, label: 'Excretion', color: 'from-purple-500 to-violet-500' },
-  toxicity: { icon: Skull, label: 'Toxicity', color: 'from-red-500 to-rose-500' },
+  absorption: { icon: Activity, label: '吸收', color: 'from-emerald-500 to-green-500' },
+  distribution: { icon: ArrowRightLeft, label: '分布', color: 'from-blue-500 to-sky-500' },
+  metabolism: { icon: FlaskRound, label: '代谢', color: 'from-amber-500 to-yellow-500' },
+  excretion: { icon: Droplets, label: '排泄', color: 'from-purple-500 to-violet-500' },
+  toxicity: { icon: Skull, label: '毒性', color: 'from-red-500 to-rose-500' },
 };
 
 const statusConfig: Record<ADMETStatus, { icon: typeof CheckCircle2; color: string; bgColor: string; label: string }> = {
-  good: { icon: CheckCircle2, color: 'text-emerald-400', bgColor: 'bg-emerald-500/20', label: 'Good' },
-  moderate: { icon: AlertTriangle, color: 'text-amber-400', bgColor: 'bg-amber-500/20', label: 'Moderate' },
-  poor: { icon: XCircle, color: 'text-red-400', bgColor: 'bg-red-500/20', label: 'Poor' },
-  unknown: { icon: HelpCircle, color: 'text-slate-400', bgColor: 'bg-slate-500/20', label: 'Unknown' },
+  good: { icon: CheckCircle2, color: 'text-emerald-400', bgColor: 'bg-emerald-500/20', label: '良好' },
+  moderate: { icon: AlertTriangle, color: 'text-amber-400', bgColor: 'bg-amber-500/20', label: '中等' },
+  poor: { icon: XCircle, color: 'text-red-400', bgColor: 'bg-red-500/20', label: '较差' },
+  unknown: { icon: HelpCircle, color: 'text-slate-400', bgColor: 'bg-slate-500/20', label: '未知' },
 };
 
 export function ADMETCard({ properties }: ADMETCardProps) {
@@ -51,10 +51,10 @@ export function ADMETCard({ properties }: ADMETCardProps) {
       <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-emerald-600/20 to-blue-600/20">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Activity className="w-5 h-5 text-emerald-400" />
-          ADMET Property Prediction
+          ADMET性质预测
         </h3>
         <p className="text-sm text-slate-400 mt-1">
-          {properties.length} ADMET properties predicted
+          已预测 {properties.length} 项ADMET性质
         </p>
       </div>
 
@@ -78,11 +78,11 @@ export function ADMETCard({ properties }: ADMETCardProps) {
                 </div>
                 <span className="text-sm font-semibold text-slate-200">{config.label}</span>
                 <div className="flex-1 flex items-center gap-1 ml-2">
-                  <span className="text-xs text-emerald-400">{goodCount} good</span>
+                  <span className="text-xs text-emerald-400">{goodCount} 良好</span>
                   <span className="text-xs text-slate-600">•</span>
-                  <span className="text-xs text-amber-400">{moderateCount} mod</span>
+                  <span className="text-xs text-amber-400">{moderateCount} 中等</span>
                   <span className="text-xs text-slate-600">•</span>
-                  <span className="text-xs text-red-400">{poorCount} poor</span>
+                  <span className="text-xs text-red-400">{poorCount} 较差</span>
                 </div>
                 <div className="flex-1 h-px bg-slate-700 hidden sm:block" />
               </div>

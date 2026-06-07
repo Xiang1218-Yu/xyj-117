@@ -21,10 +21,10 @@ const getScoreTextColor = (score: number) => {
 };
 
 const getScoreLabel = (score: number) => {
-  if (score >= 80) return 'Excellent';
-  if (score >= 60) return 'Good';
-  if (score >= 40) return 'Moderate';
-  return 'Poor';
+  if (score >= 80) return '优秀';
+  if (score >= 60) return '良好';
+  if (score >= 40) return '中等';
+  return '较差';
 };
 
 function RuleItem({ rule, index }: { rule: DrugLikenessRule; index: number }) {
@@ -49,7 +49,7 @@ function RuleItem({ rule, index }: { rule: DrugLikenessRule; index: number }) {
           {rule.threshold && (
             <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
               <Info className="w-3 h-3" />
-              Threshold: {rule.threshold}
+              阈值: {rule.threshold}
             </p>
           )}
         </div>
@@ -57,7 +57,7 @@ function RuleItem({ rule, index }: { rule: DrugLikenessRule; index: number }) {
           <div className={`text-lg font-bold ${getScoreTextColor(rule.score)}`}>
             {rule.score}
           </div>
-          <p className="text-xs text-slate-500">score</p>
+          <p className="text-xs text-slate-500">分数</p>
         </div>
       </div>
 
@@ -89,10 +89,10 @@ export function DrugLikenessCard({ result }: DrugLikenessCardProps) {
       <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-purple-600/20 to-pink-600/20">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Pill className="w-5 h-5 text-purple-400" />
-          Drug-Likeness Assessment
+          药物相似性评估
         </h3>
         <p className="text-sm text-slate-400 mt-1">
-          {passedRules} of {totalRules} rules passed
+          {totalRules} 条规则中通过 {passedRules} 条
         </p>
       </div>
 
@@ -109,7 +109,7 @@ export function DrugLikenessCard({ result }: DrugLikenessCardProps) {
                 <Award className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-sm text-slate-400">Overall Score</p>
+                <p className="text-sm text-slate-400">综合评分</p>
                 <p className={`text-3xl font-bold ${getScoreTextColor(result.overallScore)}`}>
                   {result.overallScore}
                   <span className="text-lg text-slate-500">/100</span>
@@ -154,18 +154,18 @@ export function DrugLikenessCard({ result }: DrugLikenessCardProps) {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-slate-400">{passedRules} passed</span>
+                <span className="text-slate-400">{passedRules} 通过</span>
               </div>
               <div className="flex items-center gap-1">
                 <XCircle className="w-4 h-4 text-red-400" />
-                <span className="text-slate-400">{totalRules - passedRules} failed</span>
+                <span className="text-slate-400">{totalRules - passedRules} 未通过</span>
               </div>
             </div>
             <div className="text-right">
               <span className={`font-semibold ${getScoreTextColor(result.overallScore)}`}>
                 {Math.round((passedRules / totalRules) * 100)}%
               </span>
-              <span className="text-slate-500"> pass rate</span>
+              <span className="text-slate-500"> 通过率</span>
             </div>
           </div>
         </motion.div>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import { calculateAllProperties } from '../../utils/propertyCalculator';
@@ -21,9 +22,9 @@ import {
 import { PropertyCalculationType, PDFExportConfig } from '../../types';
 
 const calculationTypes: { type: PropertyCalculationType; label: string; icon: typeof Atom; description: string }[] = [
-  { type: 'quantum', label: 'Quantum Descriptors', icon: Atom, description: '20+ molecular descriptors' },
-  { type: 'admet', label: 'ADMET Prediction', icon: Activity, description: '16 ADMET properties' },
-  { type: 'drug_likeness', label: 'Drug-Likeness', icon: Pill, description: '5 medicinal chemistry rules' },
+  { type: 'quantum', label: '量子化学描述符', icon: Atom, description: '20+ 分子描述符' },
+  { type: 'admet', label: 'ADMET性质预测', icon: Activity, description: '16项 ADMET 性质' },
+  { type: 'drug_likeness', label: '药物相似性评估', icon: Pill, description: '5条药物化学规则' },
 ];
 
 const defaultExportConfig: PDFExportConfig = {
@@ -53,6 +54,7 @@ export function PropertyCalculationPanel() {
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportConfig, setExportConfig] = useState<PDFExportConfig>(defaultExportConfig);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const hasResults = propertyCalculation.quantumDescriptors || 
                      propertyCalculation.admetProperties || 
@@ -60,12 +62,12 @@ export function PropertyCalculationPanel() {
 
   const handleCalculate = async () => {
     if (!currentMolecule) {
-      setCalculationError('Please select a molecule first');
+      setCalculationError('请先选择一个分子');
       return;
     }
 
     if (propertyCalculation.selectedTypes.length === 0) {
-      setCalculationError('Please select at least one calculation type');
+      setCalculationError('请至少选择一种计算类型');
       return;
     }
 
@@ -89,20 +91,18 @@ export function PropertyCalculationPanel() {
 
       completeCalculation();
     } catch (error) {
-      setCalculationError(error instanceof Error ? error.message : 'Calculation failed');
+      setCalculationError(error instanceof Error ? error.message : '计算失败');
     }
   };
 
   const handleExportPDF = async () => {
-    if (!currentMolecule) return;
+    if (!currentMolecule || !resultsRef.current) return;
 
     setExportingPDF(true);
     try {
       await exportPropertyReport(
         currentMolecule,
-        propertyCalculation.quantumDescriptors,
-        propertyCalculation.admetProperties,
-        propertyCalculation.drugLikeness,
+        resultsRef.current,
         exportConfig
       );
       setShowExportModal(false);
@@ -118,10 +118,10 @@ export function PropertyCalculationPanel() {
       <div className="p-4 border-b border-slate-700/50 bg-slate-900/50">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Calculator className="w-5 h-5 text-cyan-400" />
-          Property Calculator
+          分子性质计算器
         </h3>
         <p className="text-sm text-slate-400 mt-1">
-          Calculate molecular properties and drug-likeness
+          计算分子性质和药物相似性
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export function PropertyCalculationPanel() {
             className="space-y-4"
           >
             <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <h4 className="text-sm font-semibold text-slate-200 mb-3">Select Calculation Types</h4>
+              <h4 className="text-sm font-semibold text-slate-200 mb-3">选择计算类型</h4>
               
               <div className="space-y-2 mb-4">
                 {calculationTypes.map(({ type, label, icon: Icon, description }) => {
@@ -180,12 +180,12 @@ export function PropertyCalculationPanel() {
                 {propertyCalculation.isCalculating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Calculating...
+                    计算中...
                   </>
                 ) : (
                   <>
                     <Calculator className="w-5 h-5" />
-                    Calculate Properties
+                    开始计算
                   </>
                 )}
               </button>
@@ -193,7 +193,7 @@ export function PropertyCalculationPanel() {
               {!currentMolecule && (
                 <p className="text-xs text-amber-400 text-center mt-2 flex items-center justify-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  Select a molecule from the library first
+                  请先从分子库中选择一个分子
                 </p>
               )}
             </div>
@@ -203,6 +203,7 @@ export function PropertyCalculationPanel() {
         <AnimatePresence mode="popLayout">
           {hasResults && (
             <motion.div
+              ref={resultsRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -212,7 +213,7 @@ export function PropertyCalculationPanel() {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   <div>
-                    <p className="text-sm font-medium text-white">Calculation Complete</p>
+                    <p className="text-sm font-medium text-white">计算完成</p>
                     {propertyCalculation.calculatedAt && (
                       <p className="text-xs text-slate-500">
                         {propertyCalculation.calculatedAt.toLocaleString()}
@@ -231,14 +232,14 @@ export function PropertyCalculationPanel() {
                     ) : (
                       <Download className="w-4 h-4" />
                     )}
-                    Export PDF
+                    导出PDF
                   </button>
                   <button
                     onClick={resetPropertyCalculation}
                     className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-all"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    New
+                    重新计算
                   </button>
                 </div>
               </div>
@@ -265,20 +266,21 @@ export function PropertyCalculationPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+            style={{ top: 0, left: 0, right: 0, bottom: 0 }}
             onClick={() => setShowExportModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.9, y: 0 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              exit={{ scale: 0.9, y: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden"
+              className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl"
             >
               <div className="p-4 border-b border-slate-700/50">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <FileText className="w-5 h-5 text-emerald-400" />
-                  Export PDF Report
+                  导出PDF报告
                 </h3>
               </div>
 
@@ -286,7 +288,7 @@ export function PropertyCalculationPanel() {
                 <label className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-2">
                     <Atom className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-200">Molecule Information</span>
+                    <span className="text-sm text-slate-200">分子信息</span>
                   </div>
                   <input
                     type="checkbox"
@@ -299,7 +301,7 @@ export function PropertyCalculationPanel() {
                 <label className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-200">Quantum Descriptors</span>
+                    <span className="text-sm text-slate-200">量子化学描述符</span>
                   </div>
                   <input
                     type="checkbox"
@@ -312,7 +314,7 @@ export function PropertyCalculationPanel() {
                 <label className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-200">ADMET Properties</span>
+                    <span className="text-sm text-slate-200">ADMET性质</span>
                   </div>
                   <input
                     type="checkbox"
@@ -325,7 +327,7 @@ export function PropertyCalculationPanel() {
                 <label className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-2">
                     <Pill className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-200">Drug-Likeness Assessment</span>
+                    <span className="text-sm text-slate-200">药物相似性评估</span>
                   </div>
                   <input
                     type="checkbox"
@@ -336,7 +338,7 @@ export function PropertyCalculationPanel() {
                 </label>
 
                 <div className="pt-2">
-                  <label className="text-sm text-slate-400 mb-2 block">Page Size</label>
+                  <label className="text-sm text-slate-400 mb-2 block">页面大小</label>
                   <div className="flex gap-2">
                     {(['a4', 'letter'] as const).map((size) => (
                       <button
@@ -360,7 +362,7 @@ export function PropertyCalculationPanel() {
                   onClick={() => setShowExportModal(false)}
                   className="flex-1 py-2.5 px-4 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-all"
                 >
-                  Cancel
+                  取消
                 </button>
                 <button
                   onClick={handleExportPDF}
@@ -372,7 +374,7 @@ export function PropertyCalculationPanel() {
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
-                  {isExportingPDF ? 'Generating...' : 'Export'}
+                  {isExportingPDF ? '生成中...' : '导出'}
                 </button>
               </div>
             </motion.div>
