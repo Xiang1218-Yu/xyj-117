@@ -107,26 +107,31 @@ function SceneContent({
     return molecule.atoms.find(a => a.id === editor.bondStartAtomId) || null;
   }, [editor?.bondStartAtomId, molecule]);
 
-  const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
+  const handlePointerMove = useCallback(() => {
     if (!isEditMode || !editor) return;
     
     if (editor.activeTool === 'add_atom') {
       const intersection = new THREE.Vector3();
       const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion), 0);
-      e.raycaster.ray.intersectPlane(plane, intersection);
+      raycaster.setFromCamera(pointer, camera);
+      raycaster.ray.intersectPlane(plane, intersection);
       
       if (intersection) {
         setPreviewPosition(intersection);
       }
     }
-  }, [isEditMode, editor, camera]);
+  }, [isEditMode, editor, camera, raycaster, pointer]);
 
 
   const handleSceneClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     if (!isEditMode || !editor) return;
     
     if (editor.activeTool === 'add_atom' && onAddAtom && previewPosition) {
-      if (e.instanceId === undefined || (e.target as any).geometry?.type === 'PlaneGeometry') {
+      const target = e.target as any;
+      const isPlaneClick = target?.geometry?.type === 'PlaneGeometry';
+      const isEmptyClick = e.instanceId === undefined;
+      
+      if (isEmptyClick || isPlaneClick) {
         e.stopPropagation();
         onAddAtom(previewPosition.x, previewPosition.y, previewPosition.z);
         setPreviewPosition(null);
@@ -180,14 +185,12 @@ function SceneContent({
       <pointLight position={[0, -10, 0]} intensity={0.4} color="#06B6D4" />
       
       <group>
-        {/* 透明交互平面，用于捕获鼠标事件 */}
+        {/* 透明交互平面，用于捕获鼠标事件 - 移到AutoRotatingGroup外部 */}
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, -0.01, 0]}
           onPointerMove={handlePointerMove}
           onClick={handleSceneClick}
         >
-          <planeGeometry args={[100, 100]} />
+          <planeGeometry args={[200, 200]} />
           <meshBasicMaterial transparent opacity={0} />
         </mesh>
 

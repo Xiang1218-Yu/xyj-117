@@ -198,10 +198,10 @@ export function EditorToolbar() {
                         initial={{ opacity: 0, y: -5, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                        className="absolute top-full mt-1.5 right-0 p-3 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50"
+                        className="absolute top-full mt-1.5 right-0 p-3 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50 max-w-sm"
                       >
                         <p className="text-[10px] text-gray-400 mb-1.5 px-1">选择元素</p>
-                        <div className="grid grid-cols-6 gap-1 max-w-xs">
+                        <div className="flex flex-row gap-1 overflow-x-auto pb-1 max-w-sm">
                           {commonElements.map((el) => (
                             <motion.button
                               key={el}
