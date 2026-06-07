@@ -59,6 +59,117 @@ async function createFooterCanvas(dateStr: string, timeStr: string): Promise<str
   return canvas.toDataURL('image/png');
 }
 
+function removeOverflowConstraints(element: HTMLElement): void {
+  element.style.overflow = 'visible';
+  element.style.overflowY = 'visible';
+  element.style.overflowX = 'visible';
+  element.style.maxHeight = 'none';
+  element.style.minHeight = 'none';
+  element.style.height = 'auto';
+  
+  const children = element.children as HTMLCollectionOf<HTMLElement>;
+  for (let i = 0; i < children.length; i++) {
+    removeOverflowConstraints(children[i]);
+  }
+}
+
+function findBestSplitPosition(
+  canvas: HTMLCanvasElement,
+  targetY: number,
+  pxPerMm: number,
+  maxAdjustMm: number = 8
+): number {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return targetY;
+
+  const maxAdjustPx = Math.floor(maxAdjustMm * pxPerMm);
+  let bestY = targetY;
+  let minContentScore = Infinity;
+
+  const startY = Math.max(0, targetY - maxAdjustPx);
+  const endY = Math.min(canvas.height - 2, targetY + maxAdjustPx);
+
+  for (let testY = startY; testY <= endY; testY += 2) {
+    try {
+      const imageData = ctx.getImageData(0, Math.floor(testY), canvas.width, 2);
+      const data = imageData.data;
+      
+      let contentScore = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const brightness = (r + g + b) / 3;
+        if (brightness > 30) {
+          contentScore += brightness;
+        }
+      }
+      
+      if (contentScore < minContentScore) {
+        minContentScore = contentScore;
+        bestY = testY;
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+
+  return bestY;
+}
+
+async function captureFullContent(contentElement: HTMLElement): Promise<HTMLCanvasElement> {
+  const clone = contentElement.cloneNode(true) as HTMLElement;
+  
+  clone.style.position = 'fixed';
+  clone.style.top = '-99999px';
+  clone.style.left = '-99999px';
+  clone.style.width = `${contentElement.scrollWidth}px`;
+  clone.style.height = 'auto';
+  clone.style.maxHeight = 'none';
+  clone.style.minHeight = 'none';
+  clone.style.overflow = 'visible';
+  clone.style.overflowY = 'visible';
+  clone.style.overflowX = 'visible';
+  clone.style.zIndex = '-9999';
+  clone.style.pointerEvents = 'none';
+  clone.style.backgroundColor = '#0f172a';
+  clone.style.display = 'block';
+  clone.style.flex = 'none';
+  clone.style.flexGrow = '0';
+  clone.style.flexShrink = '0';
+
+  document.body.appendChild(clone);
+
+  removeOverflowConstraints(clone);
+
+  const allElements = clone.querySelectorAll('*') as NodeListOf<HTMLElement>;
+  allElements.forEach((el) => {
+    const style = window.getComputedStyle(el);
+    if (style.transform !== 'none') {
+      el.style.transform = 'none';
+    }
+  });
+
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  try {
+    const canvas = await html2canvas(clone, {
+      backgroundColor: '#0f172a',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: clone.scrollWidth,
+      windowHeight: clone.scrollHeight,
+    });
+
+    return canvas;
+  } finally {
+    document.body.removeChild(clone);
+  }
+}
+
 export async function exportPropertyReport(
   molecule: Molecule,
   contentElement: HTMLElement,
@@ -72,23 +183,7 @@ export async function exportPropertyReport(
 
   addChineseFont(doc);
 
-  const originalScrollTop = contentElement.scrollTop;
-  contentElement.scrollTop = 0;
-
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  const canvas = await html2canvas(contentElement, {
-    backgroundColor: '#0f172a',
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: contentElement.scrollWidth,
-    windowHeight: contentElement.scrollHeight,
-  });
-
-  contentElement.scrollTop = originalScrollTop;
+  const canvas = await captureFullContent(contentElement);
 
   const imgData = canvas.toDataURL('image/png');
   
@@ -100,9 +195,24 @@ export async function exportPropertyReport(
   const dateStr = date.toLocaleDateString();
   const timeStr = date.toLocaleTimeString();
 
-  const totalPages = Math.ceil(imgHeight / CONTENT_MAX_HEIGHT);
-
   const pxPerMm = canvas.height / imgHeight;
+  const contentMaxHeightPx = CONTENT_MAX_HEIGHT * pxPerMm;
+
+  const pageSplits: number[] = [0];
+  let currentPos = 0;
+  
+  while (currentPos + contentMaxHeightPx < canvas.height) {
+    const targetSplitY = currentPos + contentMaxHeightPx;
+    const bestSplitY = findBestSplitPosition(canvas, targetSplitY, pxPerMm);
+    pageSplits.push(bestSplitY);
+    currentPos = bestSplitY;
+  }
+  
+  if (currentPos < canvas.height) {
+    pageSplits.push(canvas.height);
+  }
+
+  const totalPages = pageSplits.length - 1;
 
   for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
     if (currentPage > 1) {
@@ -113,11 +223,9 @@ export async function exportPropertyReport(
     const headerImgData = await createHeaderCanvas(molecule.name, pageInfo);
     doc.addImage(headerImgData, 'PNG', 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
 
-    const pageContentStartMm = (currentPage - 1) * CONTENT_MAX_HEIGHT;
-    const pageContentStartPx = pageContentStartMm * pxPerMm;
-
-    const pageContentHeightMm = Math.min(CONTENT_MAX_HEIGHT, imgHeight - pageContentStartMm);
-    const pageContentHeightPx = pageContentHeightMm * pxPerMm;
+    const pageContentStartPx = pageSplits[currentPage - 1];
+    const pageContentEndPx = pageSplits[currentPage];
+    const pageContentHeightPx = pageContentEndPx - pageContentStartPx;
 
     if (pageContentHeightPx > 0 && pageContentStartPx < canvas.height) {
       const tempCanvas = document.createElement('canvas');
