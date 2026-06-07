@@ -110,26 +110,23 @@ function SceneContent({
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (!isEditMode || !editor) return;
     
-    if (editor.activeTool === 'add_atom' && onAddAtom) {
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(pointer, camera);
-      
+    if (editor.activeTool === 'add_atom') {
       const intersection = new THREE.Vector3();
       const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion), 0);
-      raycaster.ray.intersectPlane(plane, intersection);
+      e.raycaster.ray.intersectPlane(plane, intersection);
       
       if (intersection) {
         setPreviewPosition(intersection);
       }
     }
-  }, [isEditMode, editor, pointer, camera, onAddAtom]);
+  }, [isEditMode, editor, camera]);
 
 
   const handleSceneClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     if (!isEditMode || !editor) return;
     
     if (editor.activeTool === 'add_atom' && onAddAtom && previewPosition) {
-      if (e.instanceId === undefined) {
+      if (e.instanceId === undefined || (e.target as any).geometry?.type === 'PlaneGeometry') {
         e.stopPropagation();
         onAddAtom(previewPosition.x, previewPosition.y, previewPosition.z);
         setPreviewPosition(null);
@@ -182,7 +179,18 @@ function SceneContent({
       <pointLight position={[0, 10, 0]} intensity={0.6} color="#3B82F6" />
       <pointLight position={[0, -10, 0]} intensity={0.4} color="#06B6D4" />
       
-      <group onPointerMove={handlePointerMove} onClick={handleSceneClick}>
+      <group>
+        {/* 透明交互平面，用于捕获鼠标事件 */}
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.01, 0]}
+          onPointerMove={handlePointerMove}
+          onClick={handleSceneClick}
+        >
+          <planeGeometry args={[100, 100]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+
         <AutoRotatingGroup autoRotate={autoRotate && !isEditMode} molecule={molecule}>
           <Atoms
             atoms={atoms}

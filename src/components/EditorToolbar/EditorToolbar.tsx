@@ -198,10 +198,10 @@ export function EditorToolbar() {
                         initial={{ opacity: 0, y: -5, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                        className="absolute top-full mt-1.5 right-0 p-2.5 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50"
+                        className="absolute top-full mt-1.5 right-0 p-3 bg-space-800 border border-space-600 rounded-xl shadow-2xl z-50"
                       >
                         <p className="text-[10px] text-gray-400 mb-1.5 px-1">选择元素</p>
-                        <div className="grid grid-cols-8 gap-1 max-w-xs">
+                        <div className="grid grid-cols-6 gap-1 max-w-xs">
                           {commonElements.map((el) => (
                             <motion.button
                               key={el}
@@ -211,7 +211,7 @@ export function EditorToolbar() {
                                 setSelectedElement(el);
                                 setShowElementPicker(false);
                               }}
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold transition-all ${
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
                                 editor.selectedElement === el
                                   ? 'ring-2 ring-quantum-purple scale-110'
                                   : 'hover:ring-1 hover:ring-white/30'
