@@ -27,6 +27,8 @@ import {
   ADMETProperty,
   DrugLikenessResult,
   PropertyCalculationState,
+  ReactionMechanism,
+  ReactionSimulationState,
 } from '../types';
 import { moleculeLibrary, caffeineMolecule } from '../data/molecules';
 import {
@@ -150,6 +152,24 @@ interface PropertyCalculationStore {
   completeCalculation: () => void;
   resetPropertyCalculation: () => void;
   setExportingPDF: (exporting: boolean) => void;
+}
+
+interface ReactionSimulationStore {
+  reactionSimulation: ReactionSimulationState;
+  setCurrentReaction: (reaction: ReactionMechanism | null) => void;
+  setReactionTime: (time: number) => void;
+  setReactionPlaybackSpeed: (speed: number) => void;
+  toggleReactionPlay: () => void;
+  pauseReaction: () => void;
+  resetReaction: () => void;
+  stepReactionForward: (amount?: number) => void;
+  stepReactionBackward: (amount?: number) => void;
+  goToReactionKeyframe: (index: number) => void;
+  toggleShowElectronFlow: () => void;
+  toggleShowTransitionStates: () => void;
+  toggleShowEnergyCurve: () => void;
+  toggleShowBondChanges: () => void;
+  setReactionRunning: (running: boolean) => void;
 }
 
 const defaultSimulationParams: SimulationParameters = {
@@ -296,7 +316,7 @@ const defaultPresets: DisplayPreset[] = [
   },
 ];
 
-export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore>((set, get) => ({
+export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore & ReactionSimulationStore>((set, get) => ({
   currentMolecule: caffeineMolecule,
   currentAtoms: caffeineMolecule.atoms,
   selectedAtomId: null,
@@ -1100,6 +1120,175 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
   }),
 
   setExportingPDF: (exporting) => set({ isExportingPDF: exporting }),
+
+  reactionSimulation: {
+    isRunning: false,
+    currentReaction: null,
+    currentTime: 0,
+    totalDuration: 100,
+    playbackSpeed: 1,
+    isPaused: true,
+    currentKeyframe: 0,
+    showElectronFlow: true,
+    showTransitionStates: true,
+    showEnergyCurve: true,
+    showBondChanges: true,
+  },
+
+  setCurrentReaction: (reaction) => set((state) => {
+    const totalDuration = reaction?.keyframes[reaction.keyframes.length - 1]?.time || 100;
+    const firstAtoms = reaction?.keyframes[0]?.atoms || [];
+    const atomMap = new Map<string, Atom>();
+    
+    if (reaction) {
+      reaction.reactants.forEach(mol => {
+        mol.atoms.forEach(atom => atomMap.set(atom.id, atom));
+      });
+      reaction.products.forEach(mol => {
+        mol.atoms.forEach(atom => atomMap.set(atom.id, atom));
+      });
+    }
+
+    const currentAtoms = firstAtoms.map(ka => {
+      const baseAtom = atomMap.get(ka.id);
+      return baseAtom ? { ...baseAtom, x: ka.x, y: ka.y, z: ka.z } : null;
+    }).filter((a): a is Atom => a !== null);
+
+    const tempMolecule: Molecule | null = reaction ? {
+      id: `reaction-${reaction.id}`,
+      name: reaction.name,
+      formula: reaction.chemicalEquation,
+      type: 'small_molecule',
+      atoms: currentAtoms,
+      bonds: [],
+      description: reaction.description,
+      category: '有机反应',
+    } : null;
+
+    return {
+      reactionSimulation: {
+        ...state.reactionSimulation,
+        currentReaction: reaction,
+        currentTime: 0,
+        totalDuration,
+        currentKeyframe: 0,
+        isPaused: true,
+        isRunning: false,
+      },
+      currentMolecule: tempMolecule,
+      currentAtoms,
+      selectedSimulationType: null,
+    };
+  }),
+
+  setReactionTime: (time) => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      currentTime: Math.max(0, Math.min(state.reactionSimulation.totalDuration, time)),
+    },
+  })),
+
+  setReactionPlaybackSpeed: (speed) => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      playbackSpeed: Math.max(0.25, Math.min(4, speed)),
+    },
+  })),
+
+  toggleReactionPlay: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      isPaused: !state.reactionSimulation.isPaused,
+      isRunning: state.reactionSimulation.isPaused,
+    },
+  })),
+
+  pauseReaction: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      isPaused: true,
+      isRunning: false,
+    },
+  })),
+
+  resetReaction: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      currentTime: 0,
+      currentKeyframe: 0,
+      isPaused: true,
+      isRunning: false,
+    },
+  })),
+
+  stepReactionForward: (amount = 1) => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      currentTime: Math.min(state.reactionSimulation.totalDuration, state.reactionSimulation.currentTime + amount),
+      isPaused: true,
+      isRunning: false,
+    },
+  })),
+
+  stepReactionBackward: (amount = 1) => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      currentTime: Math.max(0, state.reactionSimulation.currentTime - amount),
+      isPaused: true,
+      isRunning: false,
+    },
+  })),
+
+  goToReactionKeyframe: (index) => set((state) => {
+    if (!state.reactionSimulation.currentReaction) return {};
+    const keyframes = state.reactionSimulation.currentReaction.keyframes;
+    if (index < 0 || index >= keyframes.length) return {};
+    return {
+      reactionSimulation: {
+        ...state.reactionSimulation,
+        currentTime: keyframes[index].time,
+        currentKeyframe: index,
+        isPaused: true,
+        isRunning: false,
+      },
+    };
+  }),
+
+  toggleShowElectronFlow: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      showElectronFlow: !state.reactionSimulation.showElectronFlow,
+    },
+  })),
+
+  toggleShowTransitionStates: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      showTransitionStates: !state.reactionSimulation.showTransitionStates,
+    },
+  })),
+
+  toggleShowEnergyCurve: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      showEnergyCurve: !state.reactionSimulation.showEnergyCurve,
+    },
+  })),
+
+  toggleShowBondChanges: () => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      showBondChanges: !state.reactionSimulation.showBondChanges,
+    },
+  })),
+
+  setReactionRunning: (running) => set((state) => ({
+    reactionSimulation: {
+      ...state.reactionSimulation,
+      isRunning: running,
+      isPaused: !running,
+    },
+  })),
 }));
 
 export { moleculeLibrary };

@@ -12,7 +12,8 @@ import {
   HelpCircle,
   Github,
   Sparkles,
-  X
+  X,
+  FlaskConical
 } from 'lucide-react';
 import * as THREE from 'three';
 import { useStore } from '../store/useStore';
@@ -199,6 +200,18 @@ export default function Home() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.location.href = '/reaction-mechanism'}
+            className="p-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 hover:from-amber-500/30 hover:to-orange-500/30 transition-all"
+            title="反应机理模拟"
+          >
+            <FlaskConical size={18} />
+          </motion.button>
+
+          <div className="h-6 w-px bg-space-700 mx-1" />
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

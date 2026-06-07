@@ -257,3 +257,99 @@ export interface PDFExportConfig {
   include3DScreenshot: boolean;
   pageSize: 'a4' | 'letter';
 }
+
+export type ReactionType = 'SN2' | 'E2' | 'SN1' | 'E1' | 'nucleophilic_addition' | 'elimination' | 'electrophilic_substitution' | 'diels_alder' | 'grignard' | 'hydrolysis' | 'esterification';
+
+export type ElectronTransferType = 'lone_pair_to_bond' | 'bond_to_lone_pair' | 'bond_to_bond' | 'lone_pair_to_lone_pair';
+
+export type BondChangeType = 'break' | 'form' | 'change_order';
+
+export interface ElectronTransfer {
+  id: string;
+  type: ElectronTransferType;
+  fromAtom: string;
+  toAtom: string;
+  fromBond?: string;
+  toBond?: string;
+  startTime: number;
+  endTime: number;
+  color: string;
+  curvePoints: { x: number; y: number; z: number }[];
+  electronCount: number;
+}
+
+export interface BondChange {
+  id: string;
+  type: BondChangeType;
+  atom1: string;
+  atom2: string;
+  startTime: number;
+  endTime: number;
+  initialOrder: number;
+  finalOrder: number;
+  isTransitionState?: boolean;
+}
+
+export interface ReactionKeyframe {
+  time: number;
+  label: string;
+  type: 'reactant' | 'transition_state' | 'intermediate' | 'product';
+  atoms: { id: string; x: number; y: number; z: number }[];
+  bonds: { atom1: string; atom2: string; order: number }[];
+  energy: number;
+  isHighlighted?: boolean;
+}
+
+export interface ReactionEnergyPoint {
+  time: number;
+  energy: number;
+  label?: string;
+  type?: 'reactant' | 'transition_state' | 'intermediate' | 'product';
+}
+
+export interface ReactionMechanism {
+  id: string;
+  name: string;
+  type: ReactionType;
+  description: string;
+  chemicalEquation: string;
+  reactants: Molecule[];
+  products: Molecule[];
+  keyframes: ReactionKeyframe[];
+  electronTransfers: ElectronTransfer[];
+  bondChanges: BondChange[];
+  energyProfile: ReactionEnergyPoint[];
+  activationEnergy: number;
+  reactionEnthalpy: number;
+  conditions?: {
+    solvent?: string;
+    temperature?: string;
+    catalyst?: string;
+  };
+  notes?: string;
+}
+
+export interface ReactionSimulationState {
+  isRunning: boolean;
+  currentReaction: ReactionMechanism | null;
+  currentTime: number;
+  totalDuration: number;
+  playbackSpeed: number;
+  isPaused: boolean;
+  currentKeyframe: number;
+  showElectronFlow: boolean;
+  showTransitionStates: boolean;
+  showEnergyCurve: boolean;
+  showBondChanges: boolean;
+}
+
+export interface AnimationParticle {
+  id: string;
+  position: { x: number; y: number; z: number };
+  velocity: { x: number; y: number; z: number };
+  color: string;
+  size: number;
+  life: number;
+  maxLife: number;
+  trail: { x: number; y: number; z: number }[];
+}
