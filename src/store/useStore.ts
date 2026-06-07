@@ -171,17 +171,17 @@ const defaultLineConfig: LineConfig = {
   lineWidth: 2,
   colorBy: 'element',
   uniformColor: '#ffffff',
-  showAtomPoints: true,
+  showAtomPoints: false,
   atomPointSize: 0.3,
 };
 
 const defaultStickConfig: StickConfig = {
-  stickRadius: 0.2,
+  stickRadius: 0.3,
   stickLengthRatio: 0.8,
   metalness: 0.3,
   roughness: 0.4,
   showAtomSpheres: true,
-  atomSphereScale: 0.3,
+  atomSphereScale: 0.7,
 };
 
 const defaultPointCloudConfig: PointCloudConfig = {
