@@ -14,6 +14,8 @@ export function ElectronTransferArrow({ transfer, showFlow }: ElectronTransferAr
   const tubeMeshRef = useRef<THREE.Mesh>(null);
   const particlesRef = useRef<THREE.Points>(null);
   const glowMeshRef = useRef<THREE.Mesh>(null);
+  const geometriesRef = useRef<THREE.BufferGeometry[]>([]);
+  const materialsRef = useRef<THREE.Material[]>([]);
 
   const { curveGeometry, arrowHeadGeometry, pathPoints } = useMemo(() => {
     if (transfer.curvePoints.length < 2) {
@@ -31,9 +33,11 @@ export function ElectronTransferArrow({ transfer, showFlow }: ElectronTransferAr
 
     const curve = new THREE.CatmullRomCurve3(points);
     const tubeGeometry = new THREE.TubeGeometry(curve, segments, 0.05, 8, false);
+    geometriesRef.current.push(tubeGeometry);
     
     const arrowHeadGeometry = new THREE.ConeGeometry(0.15, 0.4, 8);
     arrowHeadGeometry.translate(0, 0.2, 0);
+    geometriesRef.current.push(arrowHeadGeometry);
 
     return { curveGeometry: tubeGeometry, arrowHeadGeometry, pathPoints: points };
   }, [transfer.curvePoints]);
@@ -116,6 +120,15 @@ export function ElectronTransferArrow({ transfer, showFlow }: ElectronTransferAr
       positions.needsUpdate = true;
     }
   });
+
+  useEffect(() => {
+    return () => {
+      geometriesRef.current.forEach(geo => geo.dispose());
+      materialsRef.current.forEach(mat => mat.dispose());
+      geometriesRef.current = [];
+      materialsRef.current = [];
+    };
+  }, []);
 
   if (!curveGeometry || !arrowHeadGeometry || transfer.curvePoints.length < 2) {
     return null;

@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { BondChange } from '../../types';
@@ -11,6 +11,10 @@ interface BondChangeAnimatorProps {
 
 export function BondChangeAnimator({ bondChanges, atoms, showBondChanges }: BondChangeAnimatorProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const glowGroupRef = useRef<THREE.Group>(null);
+  const timeRef = useRef(0);
+  const geometriesRef = useRef<THREE.BufferGeometry[]>([]);
+  const materialsRef = useRef<THREE.Material[]>([]);
 
   const bondChangeData = useMemo(() => {
     return bondChanges.map(change => {
@@ -91,67 +95,100 @@ export function BondChangeAnimator({ bondChanges, atoms, showBondChanges }: Bond
   }, [bondChanges, atoms]);
 
   useFrame((state) => {
-    if (!groupRef.current) return;
+    timeRef.current = state.clock.elapsedTime;
+    const time = timeRef.current;
     
-    const time = state.clock.elapsedTime;
-    
-    groupRef.current.children.forEach((child, i) => {
-      const data = bondChangeData[i];
-      if (!data || !data.isActive) return;
+    if (groupRef.current) {
+      groupRef.current.children.forEach((child, i) => {
+        const data = bondChangeData[i];
+        if (!data || !data.isActive) return;
 
-      if (data.type === 'break') {
-        const pulse = 1 + Math.sin(time * 8) * 0.15;
-        child.scale.setScalar(pulse);
-      } else if (data.type === 'form') {
-        const pulse = 1 + Math.sin(time * 6 + i) * 0.1;
-        child.scale.setScalar(pulse);
-      }
-    });
+        if (data.type === 'break') {
+          const pulse = 1 + Math.sin(time * 8) * 0.15;
+          child.scale.setScalar(pulse);
+        } else if (data.type === 'form') {
+          const pulse = 1 + Math.sin(time * 6 + i) * 0.1;
+          child.scale.setScalar(pulse);
+        }
+      });
+    }
+
+    if (glowGroupRef.current) {
+      glowGroupRef.current.children.forEach((child, i) => {
+        const data = bondChangeData[i];
+        if (!data || !data.isActive) return;
+
+        const glowMesh = child.children[0] as THREE.Mesh;
+        if (glowMesh && glowMesh.material) {
+          const material = glowMesh.material as THREE.MeshBasicMaterial;
+          material.opacity = 0.6 + Math.sin(time * 6 + i * 0.5) * 0.3;
+        }
+      });
+    }
   });
+
+  useEffect(() => {
+    geometriesRef.current.forEach(geo => geo.dispose());
+    materialsRef.current.forEach(mat => mat.dispose());
+    geometriesRef.current = [];
+    materialsRef.current = [];
+  }, [bondChangeData]);
+
+  useEffect(() => {
+    return () => {
+      geometriesRef.current.forEach(geo => geo.dispose());
+      materialsRef.current.forEach(mat => mat.dispose());
+      geometriesRef.current = [];
+      materialsRef.current = [];
+    };
+  }, []);
 
   if (!showBondChanges || bondChangeData.length === 0) return null;
 
   return (
-    <group ref={groupRef}>
-      {bondChangeData.map((data) => {
-        const points = [data.start, data.end];
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    <group>
+      <group ref={groupRef}>
+        {bondChangeData.map((data) => {
+          const points = [data.start, data.end];
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          geometriesRef.current.push(geometry);
 
-        return (
-          <lineSegments
-            key={data.id}
-            position={[0, 0, 0]}
-          >
-            <bufferGeometry
-              attach="geometry"
-              {...geometry}
-            />
-            <lineDashedMaterial
-              color={data.color}
-              transparent
-              opacity={data.opacity}
-              dashSize={data.dashSize}
-              gapSize={data.gapSize}
-              linewidth={3}
-            />
-          </lineSegments>
-        );
-      })}
+          const material = new THREE.LineDashedMaterial({
+            color: data.color,
+            transparent: true,
+            opacity: data.opacity,
+            dashSize: data.dashSize,
+            gapSize: data.gapSize,
+          });
+          materialsRef.current.push(material);
 
-      {bondChangeData.map(data => (
-        <group key={`glow-${data.id}`}>
-          {data.isActive && (
-            <mesh position={data.mid.toArray() as [number, number, number]}>
-              <sphereGeometry args={[0.12, 16, 16]} />
-              <meshBasicMaterial
-                color={data.color}
-                transparent
-                opacity={0.6 + Math.sin(Date.now() * 0.01) * 0.3}
-              />
-            </mesh>
-          )}
-        </group>
-      ))}
+          return (
+            <lineSegments
+              key={data.id}
+              position={[0, 0, 0]}
+              geometry={geometry}
+              material={material}
+            />
+          );
+        })}
+      </group>
+
+      <group ref={glowGroupRef}>
+        {bondChangeData.map(data => (
+          <group key={`glow-${data.id}`}>
+            {data.isActive && (
+              <mesh position={data.mid.toArray() as [number, number, number]}>
+                <sphereGeometry args={[0.12, 16, 16]} />
+                <meshBasicMaterial
+                  color={data.color}
+                  transparent
+                  opacity={0.6}
+                />
+              </mesh>
+            )}
+          </group>
+        ))}
+      </group>
     </group>
   );
 }

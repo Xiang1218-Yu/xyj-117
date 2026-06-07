@@ -96,7 +96,7 @@ function SceneContent({
 
       <group ref={groupRef}>
         <Atoms
-          atoms={currentAtoms as Atom[]}
+          atoms={currentAtoms}
           displayMode="ball_stick"
           showHydrogens={showHydrogens}
           selectedAtomId={null}
@@ -106,7 +106,7 @@ function SceneContent({
         
         <Bonds
           bonds={currentBonds as Bond[]}
-          atoms={currentAtoms as Atom[]}
+          atoms={currentAtoms}
           displayMode="ball_stick"
           showHydrogens={showHydrogens}
         />

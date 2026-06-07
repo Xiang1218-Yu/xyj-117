@@ -311,11 +311,11 @@ export const getCurrentAtomsForRender = (
   reaction: ReactionMechanism,
   currentTime: number,
   showHydrogens: boolean = true
-): (Atom & { x: number; y: number; z: number })[] => {
+): Atom[] => {
   const { prev, next, t } = findSurroundingKeyframes(reaction.keyframes, currentTime);
   const positions = interpolateAtomPositions(prev, next, t);
 
-  const atoms: (Atom & { x: number; y: number; z: number })[] = [];
+  const atoms: Atom[] = [];
   const allAtomIds = new Set([
     ...prev.atoms.map(a => a.id),
     ...next.atoms.map(a => a.id),
@@ -464,6 +464,15 @@ export class ReactionMechanismEngine {
   }
 
   play(): void {
+    if (!this.reaction) return;
+    
+    const maxTime = this.reaction.keyframes[this.reaction.keyframes.length - 1]?.time || 100;
+    
+    if (this.currentTime >= maxTime) {
+      this.currentTime = 0;
+      this.particlePool.clear();
+    }
+    
     this.isPlaying = true;
     this.lastFrameTime = performance.now();
   }
