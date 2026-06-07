@@ -1,11 +1,11 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Atom } from '../../types';
+import { Atom, DisplayMode } from '../../types';
 
 interface ElectronCloudProps {
   atoms: Atom[];
-  displayMode: 'ball_stick' | 'space_filling' | 'ribbon' | 'surface';
+  displayMode: DisplayMode;
   isVisible: boolean;
 }
 

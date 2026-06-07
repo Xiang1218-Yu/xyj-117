@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, RotateCcw, Settings } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { DisplayMode, DisplayModeConfig } from '../../types';
+import { DisplayMode, DisplayModeConfig as DisplayModeConfigType } from '../../types';
 
 interface DisplayModeConfigProps {
   displayMode: DisplayMode;
@@ -128,11 +128,8 @@ export function DisplayModeConfig({ displayMode }: DisplayModeConfigProps) {
 
   const config = displayConfig[displayMode];
 
-  const handleConfigChange = <K extends keyof DisplayModeConfig[DisplayMode]>(
-    key: K,
-    value: DisplayModeConfig[DisplayMode][K]
-  ) => {
-    setDisplayConfig(displayMode, { [key]: value } as Partial<DisplayModeConfig[DisplayMode]>);
+  const handleConfigChange = (key: string, value: any) => {
+    setDisplayConfig(displayMode, { [key]: value } as Partial<DisplayModeConfigType[DisplayMode]>);
   };
 
   const handleReset = () => {

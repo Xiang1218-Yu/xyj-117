@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Text, Points, PointMaterial } from '@react-three/drei';
+import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { Atom, EditorState, DisplayMode, BallStickConfig, SpaceFillingConfig, StickConfig, PointCloudConfig, LineConfig } from '../../types';
 import { getAtomColor, getAtomRadius } from '../../utils/atomColors';
@@ -41,7 +41,7 @@ export function Atoms({
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const hoveredRef = useRef<string | null>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const { camera, raycaster, pointer } = useThree();
+  const { camera, pointer } = useThree();
   const [isDragging, setIsDragging] = useState(false);
   const dragPlane = useRef(new THREE.Plane());
   const dragOffset = useRef(new THREE.Vector3());
@@ -58,29 +58,35 @@ export function Atoms({
       let roughness = 0.4;
       
       switch (displayMode) {
-        case 'space_filling':
+        case 'space_filling': {
           baseScale = config?.space_filling?.atomScale ?? 1.2;
           metalness = config?.space_filling?.metalness ?? 0.2;
           roughness = config?.space_filling?.roughness ?? 0.5;
           break;
-        case 'ball_stick':
+        }
+        case 'ball_stick': {
           baseScale = config?.ball_stick?.atomScale ?? 0.5;
           metalness = config?.ball_stick?.atomMetalness ?? 0.3;
           roughness = config?.ball_stick?.atomRoughness ?? 0.4;
           break;
-        case 'stick':
-          baseScale = config?.stick?.showAtomSpheres 
-            ? (config?.stick?.atomSphereScale ?? 0.3) 
+        }
+        case 'stick': {
+          const stickConfig = config?.stick;
+          baseScale = (stickConfig?.showAtomSpheres ?? true)
+            ? (stickConfig?.atomSphereScale ?? 0.3)
             : 0;
-          metalness = config?.stick?.metalness ?? 0.3;
-          roughness = config?.stick?.roughness ?? 0.4;
+          metalness = stickConfig?.metalness ?? 0.3;
+          roughness = stickConfig?.roughness ?? 0.4;
           break;
-        case 'line':
-          baseScale = config?.line?.showAtomPoints 
-            ? (config?.line?.atomPointSize ?? 0.3) 
+        }
+        case 'line': {
+          const lineConfig = config?.line;
+          baseScale = (lineConfig?.showAtomPoints ?? true)
+            ? (lineConfig?.atomPointSize ?? 0.3)
             : 0;
           break;
-        case 'point_cloud':
+        }
+        case 'point_cloud': {
           const pcConfig = config?.point_cloud;
           if (pcConfig?.sizeBy === 'constant') {
             baseScale = pcConfig?.constantSize ?? 0.5;
@@ -88,12 +94,15 @@ export function Atoms({
             baseScale = pcConfig?.pointSize ?? 0.5;
           }
           break;
+        }
         case 'ribbon':
-        case 'surface':
+        case 'surface': {
           baseScale = 0;
           break;
-        default:
+        }
+        default: {
           baseScale = 0.5;
+        }
       }
       
       const radius = baseScale > 0 ? getAtomRadius(atom.element) * baseScale : 0;
@@ -118,24 +127,38 @@ export function Atoms({
         finalColor = new THREE.Color('#EF4444');
       } else if (editor?.activeTool === 'bond' && hoveredRef.current === atom.id && isBondStart) {
         finalColor = new THREE.Color('#22D3EE');
-      } else if (editor?.activeTool === 'bond' && editor?.bondStartAtomId && !isBondStart && hoveredRef.current === atom.id) {
-        finalColor = new THREE.Color('#34D399');
       }
       
       return {
+        id: atom.id,
         position: [atom.x, atom.y, atom.z] as [number, number, number],
         scale: finalScale,
         color: finalColor,
+        element: atom.element,
         isSelected,
-        isBondStart,
-        isDragTarget,
-        id: atom.id,
         metalness,
         roughness,
-        element: atom.element,
       };
     });
-  }, [filteredAtoms, displayMode, selectedAtomId, editor, hoveredRef.current, config]);
+  }, [filteredAtoms, displayMode, selectedAtomId, editor, config]);
+
+  const pointCloudData = useMemo(() => {
+    const positions = new Float32Array(atomData.length * 3);
+    const colors = new Float32Array(atomData.length * 3);
+    const sizes = new Float32Array(atomData.length);
+    
+    atomData.forEach((d, i) => {
+      positions[i * 3] = d.position[0];
+      positions[i * 3 + 1] = d.position[1];
+      positions[i * 3 + 2] = d.position[2];
+      colors[i * 3] = d.color.r;
+      colors[i * 3 + 1] = d.color.g;
+      colors[i * 3 + 2] = d.color.b;
+      sizes[i] = d.scale * 10;
+    });
+    
+    return { positions, colors, sizes };
+  }, [atomData]);
 
   const positions = useMemo(() => {
     const pos: [number, number, number][] = [];
@@ -186,7 +209,7 @@ export function Atoms({
     meshRef.current.instanceMatrix.needsUpdate = true;
   });
 
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: { instanceId?: number; stopPropagation: () => void }) => {
     e.stopPropagation();
     const instanceId = e.instanceId;
     if (instanceId === undefined || instanceId >= atomData.length) return;
@@ -218,7 +241,7 @@ export function Atoms({
     }
   };
 
-  const handlePointerMove = (e: any) => {
+  const handlePointerMove = (e: { instanceId?: number; stopPropagation: () => void }) => {
     e.stopPropagation();
     
     if (isDragging && dragAtomRef.current && onAtomDrag) {
@@ -256,7 +279,7 @@ export function Atoms({
     }
   };
 
-  const handlePointerUp = (e: any) => {
+  const handlePointerUp = (e: { stopPropagation: () => void }) => {
     if (isDragging) {
       e.stopPropagation();
       setIsDragging(false);
@@ -273,7 +296,7 @@ export function Atoms({
     }
   };
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: { instanceId?: number; stopPropagation: () => void }) => {
     if (isDragging) {
       e.stopPropagation();
       return;
@@ -315,24 +338,6 @@ export function Atoms({
   };
 
   if (atomData.length === 0) return null;
-
-  const pointCloudData = useMemo(() => {
-    const positions = new Float32Array(atomData.length * 3);
-    const colors = new Float32Array(atomData.length * 3);
-    const sizes = new Float32Array(atomData.length);
-    
-    atomData.forEach((d, i) => {
-      positions[i * 3] = d.position[0];
-      positions[i * 3 + 1] = d.position[1];
-      positions[i * 3 + 2] = d.position[2];
-      colors[i * 3] = d.color.r;
-      colors[i * 3 + 1] = d.color.g;
-      colors[i * 3 + 2] = d.color.b;
-      sizes[i] = d.scale * 10;
-    });
-    
-    return { positions, colors, sizes };
-  }, [atomData]);
 
   if (displayMode === 'point_cloud') {
     const pcConfig = config?.point_cloud;
@@ -421,23 +426,22 @@ export function Atoms({
 
   return (
     <>
-    <instancedMesh
-      ref={meshRef}
-      args={[undefined, undefined, atomData.length]}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerOut={handlePointerOut}
-      onClick={handleClick}
-    >
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial
-        metalness={materialMetalness}
-        roughness={materialRoughness}
-        envMapIntensity={1}
-      />
-    </instancedMesh>
-
+      <instancedMesh
+        ref={meshRef}
+        args={[undefined, undefined, atomData.length]}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerOut={handlePointerOut}
+        onClick={handleClick}
+      >
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial
+          metalness={materialMetalness}
+          roughness={materialRoughness}
+        />
+      </instancedMesh>
+      
       {selectedAtomId && (() => {
         const atom = filteredAtoms.find(a => a.id === selectedAtomId);
         if (!atom) return null;
