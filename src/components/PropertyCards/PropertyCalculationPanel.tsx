@@ -125,7 +125,7 @@ export function PropertyCalculationPanel() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={resultsRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {!hasResults && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -203,7 +203,6 @@ export function PropertyCalculationPanel() {
         <AnimatePresence mode="popLayout">
           {hasResults && (
             <motion.div
-              ref={resultsRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -271,9 +270,9 @@ export function PropertyCalculationPanel() {
             onClick={() => setShowExportModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 0 }}
+              initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl"
             >

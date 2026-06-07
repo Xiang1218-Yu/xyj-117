@@ -14,7 +14,7 @@ const categoryConfig: Record<DescriptorCategory, { icon: typeof Atom; label: str
 };
 
 const formatValue = (value: number, name: string): string => {
-  if (name === 'Molecular Formula') {
+  if (name === '分子式') {
     return `C${Math.round(value)}`;
   }
   if (Math.abs(value) >= 1000) return value.toExponential(2);
