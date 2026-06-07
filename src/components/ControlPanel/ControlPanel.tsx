@@ -22,6 +22,7 @@ import { useStore } from '../../store/useStore';
 import { DisplayMode, SimulationType } from '../../types';
 import { simulateProteinFolding, simulateDocking, simulateMaterialProperties } from '../../utils/simulationEngine';
 import { moleculeLibrary, aspirinMolecule, lysozyme } from '../../data/molecules';
+import { PropertyEditor } from '../PropertyEditor/PropertyEditor';
 
 const displayModes: { id: DisplayMode; label: string; icon: any }[] = [
   { id: 'ball_stick', label: '球棍模型', icon: Atom },
@@ -204,6 +205,8 @@ export function ControlPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        <PropertyEditor />
+
         <div className="border-b border-space-700">
           <button
             onClick={() => toggleSection('display')}

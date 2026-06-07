@@ -95,3 +95,27 @@ export interface Measurement {
   value: number;
   unit: string;
 }
+
+export type EditorTool = 'select' | 'add_atom' | 'delete' | 'bond' | 'erase_bond' | 'drag';
+
+export type EditorMode = 'view' | 'edit';
+
+export interface EditorState {
+  mode: EditorMode;
+  activeTool: EditorTool;
+  selectedBondId: string | null;
+  selectedElement: string;
+  bondOrder: 1 | 2 | 3 | 'aromatic';
+  bondStartAtomId: string | null;
+  isDragging: boolean;
+  dragAtomId: string | null;
+  showHydrogenOnAdd: boolean;
+  autoBond: boolean;
+}
+
+export interface EditHistoryEntry {
+  type: 'add_atom' | 'delete_atom' | 'add_bond' | 'delete_bond' | 'modify_atom' | 'modify_bond';
+  before: any;
+  after: any;
+  timestamp: number;
+}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, 
@@ -14,11 +14,14 @@ import {
   Sparkles,
   X
 } from 'lucide-react';
+import * as THREE from 'three';
 import { useStore } from '../store/useStore';
 import { MoleculeScene } from '../components/MoleculeViewer/MoleculeScene';
 import { MoleculeLibrary } from '../components/MoleculeLibrary/MoleculeLibrary';
 import { ControlPanel } from '../components/ControlPanel/ControlPanel';
 import { DataPanel } from '../components/DataPanel/DataPanel';
+import { EditorToolbar } from '../components/EditorToolbar/EditorToolbar';
+import { PropertyEditor } from '../components/PropertyEditor/PropertyEditor';
 import { Empty } from '../components/Empty';
 
 export default function Home() {
@@ -44,12 +47,70 @@ export default function Home() {
     setDataPanelFullscreen,
     simulation,
     calculationResult,
+    editor,
+    setSelectedBond,
+    setBondStartAtom,
+    addAtom,
+    deleteAtom,
+    addBond,
+    deleteBond,
+    dragAtom,
+    clearEditorSelection,
+    undoEdit,
+    redoEdit,
   } = useStore();
 
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
   const ligandAtoms = simulation.isRunning ? currentAtoms : undefined;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoEdit();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redoEdit();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (editor.mode === 'edit' && selectedAtomId) {
+          e.preventDefault();
+          deleteAtom(selectedAtomId);
+        } else if (editor.mode === 'edit' && editor.selectedBondId) {
+          e.preventDefault();
+          deleteBond(editor.selectedBondId);
+        }
+      } else if (e.key === 'Escape') {
+        clearEditorSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editor.mode, selectedAtomId, editor.selectedBondId, undoEdit, redoEdit, deleteAtom, deleteBond, clearEditorSelection]);
+
+  const handleAddBond = useCallback((atom1Id: string, atom2Id: string) => {
+    addBond(atom1Id, atom2Id);
+  }, [addBond]);
+
+  const handleBondStart = useCallback((atomId: string) => {
+    setBondStartAtom(atomId);
+  }, [setBondStartAtom]);
+
+  const handleBondClick = useCallback((bondId: string) => {
+    setSelectedBond(bondId);
+  }, [setSelectedBond]);
+
+  const handleSceneClick = useCallback((point: THREE.Vector3) => {
+    if (editor.activeTool === 'add_atom') {
+      addAtom(point.x, point.y, point.z);
+    }
+  }, [editor.activeTool, addAtom]);
   
   const showLeftPanel = leftPanelOpen && !dataPanelFullscreen;
   const showRightPanel = rightPanelOpen && !dataPanelFullscreen;
@@ -236,6 +297,13 @@ export default function Home() {
 
         {/* Center - 3D Viewer */}
         <main className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Editor Toolbar */}
+          {currentMolecule && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+              <EditorToolbar />
+            </div>
+          )}
+
           <div className="flex-1 relative">
             {currentMolecule ? (
               <MoleculeScene
@@ -251,6 +319,16 @@ export default function Home() {
                 showElectronCloud={showElectronCloud}
                 currentAtoms={currentAtoms}
                 ligandAtoms={ligandAtoms}
+                editor={editor}
+                onAddAtom={addAtom}
+                onDeleteAtom={deleteAtom}
+                onAddBond={handleAddBond}
+                onDeleteBond={deleteBond}
+                onBondStart={handleBondStart}
+                onBondClick={handleBondClick}
+                onAtomDrag={dragAtom}
+                onSceneClick={handleSceneClick}
+                onClearSelection={clearEditorSelection}
               />
             ) : (
               <Empty />
