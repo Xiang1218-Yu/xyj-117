@@ -34,8 +34,17 @@ import {
   SpectrumSimulationState,
   SpectrumParameters,
   SpectrumPeak,
+  Workflow,
+  WorkflowNode,
+  WorkflowConnection,
+  WorkflowNodeType,
+  WorkflowExecutionState,
+  WorkflowNodeStatus,
+  DragState,
+  ConnectionDragState,
 } from '../types';
 import { moleculeLibrary, caffeineMolecule } from '../data/molecules';
+import { getNodeDefinition } from '../data/workflowNodes';
 import {
   addAtomToMolecule,
   deleteAtomFromMolecule,
@@ -193,6 +202,45 @@ interface SpectrumSimulationStore {
   completeSpectrumSimulation: () => void;
   resetSpectrumSimulation: () => void;
   setSelectedSpectrumPeak: (peak: SpectrumPeak | null) => void;
+}
+
+interface WorkflowStore {
+  currentWorkflow: Workflow | null;
+  savedWorkflows: Workflow[];
+  workflowExecution: WorkflowExecutionState;
+  selectedNodeId: string | null;
+  dragState: DragState;
+  connectionDragState: ConnectionDragState;
+  zoomLevel: number;
+  panOffset: { x: number; y: number };
+  setCurrentWorkflow: (workflow: Workflow | null) => void;
+  createNewWorkflow: (name?: string, description?: string) => void;
+  addNode: (nodeType: WorkflowNodeType, x: number, y: number) => void;
+  removeNode: (nodeId: string) => void;
+  updateNodePosition: (nodeId: string, x: number, y: number) => void;
+  updateNodeConfig: (nodeId: string, config: Record<string, any>) => void;
+  setNodeStatus: (nodeId: string, status: WorkflowNodeStatus, error?: string, progress?: number) => void;
+  setNodeResult: (nodeId: string, result: any) => void;
+  selectNode: (nodeId: string | null) => void;
+  addConnection: (fromNodeId: string, fromPortId: string, toNodeId: string, toPortId: string) => void;
+  removeConnection: (connectionId: string) => void;
+  setDragState: (dragState: Partial<DragState>) => void;
+  setConnectionDragState: (dragState: Partial<ConnectionDragState>) => void;
+  setZoomLevel: (zoom: number) => void;
+  setPanOffset: (x: number, y: number) => void;
+  saveWorkflow: (name?: string) => void;
+  loadWorkflow: (workflowId: string) => void;
+  deleteSavedWorkflow: (workflowId: string) => void;
+  clearWorkflow: () => void;
+  startWorkflowExecution: () => void;
+  pauseWorkflowExecution: () => void;
+  resumeWorkflowExecution: () => void;
+  stopWorkflowExecution: () => void;
+  resetWorkflowExecution: () => void;
+  setWorkflowExecutionError: (error: string | null) => void;
+  setCurrentExecutingNode: (nodeId: string | null) => void;
+  completeNodeExecution: (nodeId: string, result: any) => void;
+  completeWorkflowExecution: () => void;
 }
 
 const defaultSimulationParams: SimulationParameters = {
@@ -366,7 +414,7 @@ const defaultPresets: DisplayPreset[] = [
   },
 ];
 
-export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore & ReactionSimulationStore & SpectrumSimulationStore>((set, get) => ({
+export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore & ReactionSimulationStore & SpectrumSimulationStore & WorkflowStore>((set, get) => ({
   currentMolecule: caffeineMolecule,
   currentAtoms: caffeineMolecule.atoms,
   selectedAtomId: null,
@@ -1451,6 +1499,448 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
     spectrumSimulation: {
       ...state.spectrumSimulation,
       selectedPeak: peak,
+    },
+  })),
+
+  currentWorkflow: null,
+  savedWorkflows: [],
+  workflowExecution: {
+    isRunning: false,
+    isPaused: false,
+    currentNodeId: null,
+    executedNodeIds: [],
+    results: {},
+    error: null,
+    startedAt: null,
+    completedAt: null,
+  },
+  selectedNodeId: null,
+  dragState: {
+    isDragging: false,
+    nodeType: null,
+    nodeId: null,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+  },
+  connectionDragState: {
+    isDragging: false,
+    fromNodeId: null,
+    fromPortId: null,
+    fromPortType: null,
+    currentX: 0,
+    currentY: 0,
+  },
+  zoomLevel: 1,
+  panOffset: { x: 0, y: 0 },
+
+  setCurrentWorkflow: (workflow) => set({ 
+    currentWorkflow: workflow,
+    selectedNodeId: null,
+    workflowExecution: {
+      isRunning: false,
+      isPaused: false,
+      currentNodeId: null,
+      executedNodeIds: [],
+      results: {},
+      error: null,
+      startedAt: null,
+      completedAt: null,
+    },
+  }),
+
+  createNewWorkflow: (name = '新建工作流', description) => set((state) => {
+    const newWorkflow: Workflow = {
+      id: `workflow-${Date.now()}`,
+      name,
+      description,
+      nodes: [],
+      connections: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    return {
+      currentWorkflow: newWorkflow,
+      selectedNodeId: null,
+      zoomLevel: 1,
+      panOffset: { x: 0, y: 0 },
+      workflowExecution: {
+        isRunning: false,
+        isPaused: false,
+        currentNodeId: null,
+        executedNodeIds: [],
+        results: {},
+        error: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    };
+  }),
+
+  addNode: (nodeType, x, y) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    const def = getNodeDefinition(nodeType);
+    const newNode: WorkflowNode = {
+      id: `node-${Date.now()}`,
+      type: nodeType,
+      name: def.name,
+      description: def.description,
+      x,
+      y,
+      width: 200,
+      height: Math.max(120, 80 + def.inputs.length * 30 + def.outputs.length * 30),
+      inputs: JSON.parse(JSON.stringify(def.inputs)),
+      outputs: JSON.parse(JSON.stringify(def.outputs)),
+      config: JSON.parse(JSON.stringify(def.defaultConfig)),
+      status: 'idle',
+    };
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: [...state.currentWorkflow.nodes, newNode],
+        updatedAt: Date.now(),
+      },
+      selectedNodeId: newNode.id,
+    };
+  }),
+
+  removeNode: (nodeId) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.filter(n => n.id !== nodeId),
+        connections: state.currentWorkflow.connections.filter(
+          c => c.fromNodeId !== nodeId && c.toNodeId !== nodeId
+        ),
+        updatedAt: Date.now(),
+      },
+      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
+    };
+  }),
+
+  updateNodePosition: (nodeId, x, y) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n =>
+          n.id === nodeId ? { ...n, x, y } : n
+        ),
+        updatedAt: Date.now(),
+      },
+    };
+  }),
+
+  updateNodeConfig: (nodeId, config) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n =>
+          n.id === nodeId ? { ...n, config: { ...n.config, ...config } } : n
+        ),
+        updatedAt: Date.now(),
+      },
+    };
+  }),
+
+  setNodeStatus: (nodeId, status, error, progress) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n =>
+          n.id === nodeId ? { ...n, status, error, progress } : n
+        ),
+      },
+    };
+  }),
+
+  setNodeResult: (nodeId, result) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n =>
+          n.id === nodeId ? { ...n, result } : n
+        ),
+      },
+      workflowExecution: {
+        ...state.workflowExecution,
+        results: {
+          ...state.workflowExecution.results,
+          [nodeId]: result,
+        },
+      },
+    };
+  }),
+
+  selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+
+  addConnection: (fromNodeId, fromPortId, toNodeId, toPortId) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    const exists = state.currentWorkflow.connections.some(
+      c => c.fromNodeId === fromNodeId && c.fromPortId === fromPortId &&
+           c.toNodeId === toNodeId && c.toPortId === toPortId
+    );
+    
+    if (exists) return {};
+    
+    const newConnection: WorkflowConnection = {
+      id: `conn-${Date.now()}`,
+      fromNodeId,
+      fromPortId,
+      toNodeId,
+      toPortId,
+    };
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        connections: [...state.currentWorkflow.connections, newConnection],
+        updatedAt: Date.now(),
+      },
+    };
+  }),
+
+  removeConnection: (connectionId) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        connections: state.currentWorkflow.connections.filter(c => c.id !== connectionId),
+        updatedAt: Date.now(),
+      },
+    };
+  }),
+
+  setDragState: (dragState) => set((state) => ({
+    dragState: { ...state.dragState, ...dragState },
+  })),
+
+  setConnectionDragState: (dragState) => set((state) => ({
+    connectionDragState: { ...state.connectionDragState, ...dragState },
+  })),
+
+  setZoomLevel: (zoom) => set({ zoomLevel: Math.max(0.25, Math.min(2, zoom)) }),
+
+  setPanOffset: (x, y) => set({ panOffset: { x, y } }),
+
+  saveWorkflow: (name) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    const workflowToSave: Workflow = {
+      ...state.currentWorkflow,
+      name: name || state.currentWorkflow.name,
+      updatedAt: Date.now(),
+    };
+    
+    const existingIndex = state.savedWorkflows.findIndex(w => w.id === workflowToSave.id);
+    let newSavedWorkflows;
+    
+    if (existingIndex >= 0) {
+      newSavedWorkflows = [...state.savedWorkflows];
+      newSavedWorkflows[existingIndex] = workflowToSave;
+    } else {
+      newSavedWorkflows = [...state.savedWorkflows, workflowToSave];
+    }
+    
+    try {
+      localStorage.setItem('savedWorkflows', JSON.stringify(newSavedWorkflows));
+    } catch (e) {
+      console.error('Failed to save workflows to localStorage:', e);
+    }
+    
+    return {
+      savedWorkflows: newSavedWorkflows,
+      currentWorkflow: workflowToSave,
+    };
+  }),
+
+  loadWorkflow: (workflowId) => set((state) => {
+    const workflow = state.savedWorkflows.find(w => w.id === workflowId);
+    if (!workflow) return {};
+    
+    return {
+      currentWorkflow: JSON.parse(JSON.stringify(workflow)),
+      selectedNodeId: null,
+      zoomLevel: 1,
+      panOffset: { x: 0, y: 0 },
+      workflowExecution: {
+        isRunning: false,
+        isPaused: false,
+        currentNodeId: null,
+        executedNodeIds: [],
+        results: {},
+        error: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    };
+  }),
+
+  deleteSavedWorkflow: (workflowId) => set((state) => {
+    const newSavedWorkflows = state.savedWorkflows.filter(w => w.id !== workflowId);
+    
+    try {
+      localStorage.setItem('savedWorkflows', JSON.stringify(newSavedWorkflows));
+    } catch (e) {
+      console.error('Failed to save workflows to localStorage:', e);
+    }
+    
+    return {
+      savedWorkflows: newSavedWorkflows,
+      currentWorkflow: state.currentWorkflow?.id === workflowId ? null : state.currentWorkflow,
+    };
+  }),
+
+  clearWorkflow: () => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: [],
+        connections: [],
+        updatedAt: Date.now(),
+      },
+      selectedNodeId: null,
+      workflowExecution: {
+        isRunning: false,
+        isPaused: false,
+        currentNodeId: null,
+        executedNodeIds: [],
+        results: {},
+        error: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    };
+  }),
+
+  startWorkflowExecution: () => set({
+    workflowExecution: {
+      isRunning: true,
+      isPaused: false,
+      currentNodeId: null,
+      executedNodeIds: [],
+      results: {},
+      error: null,
+      startedAt: Date.now(),
+      completedAt: null,
+    },
+  }),
+
+  pauseWorkflowExecution: () => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      isPaused: true,
+      isRunning: false,
+    },
+  })),
+
+  resumeWorkflowExecution: () => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      isPaused: false,
+      isRunning: true,
+    },
+  })),
+
+  stopWorkflowExecution: () => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      isRunning: false,
+      isPaused: false,
+      currentNodeId: null,
+    },
+  })),
+
+  resetWorkflowExecution: () => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n => ({
+          ...n,
+          status: 'idle' as WorkflowNodeStatus,
+          error: undefined,
+          progress: undefined,
+          result: undefined,
+        })),
+      },
+      workflowExecution: {
+        isRunning: false,
+        isPaused: false,
+        currentNodeId: null,
+        executedNodeIds: [],
+        results: {},
+        error: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    };
+  }),
+
+  setWorkflowExecutionError: (error) => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      error,
+      isRunning: false,
+    },
+  })),
+
+  setCurrentExecutingNode: (nodeId) => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      currentNodeId: nodeId,
+      executedNodeIds: nodeId && !state.workflowExecution.executedNodeIds.includes(nodeId)
+        ? [...state.workflowExecution.executedNodeIds, nodeId]
+        : state.workflowExecution.executedNodeIds,
+    },
+  })),
+
+  completeNodeExecution: (nodeId, result) => set((state) => {
+    if (!state.currentWorkflow) return {};
+    
+    return {
+      currentWorkflow: {
+        ...state.currentWorkflow,
+        nodes: state.currentWorkflow.nodes.map(n =>
+          n.id === nodeId ? { ...n, status: 'completed' as WorkflowNodeStatus, result, progress: 100 } : n
+        ),
+      },
+      workflowExecution: {
+        ...state.workflowExecution,
+        results: {
+          ...state.workflowExecution.results,
+          [nodeId]: result,
+        },
+        executedNodeIds: state.workflowExecution.executedNodeIds.includes(nodeId)
+          ? state.workflowExecution.executedNodeIds
+          : [...state.workflowExecution.executedNodeIds, nodeId],
+      },
+    };
+  }),
+
+  completeWorkflowExecution: () => set((state) => ({
+    workflowExecution: {
+      ...state.workflowExecution,
+      isRunning: false,
+      currentNodeId: null,
+      completedAt: Date.now(),
     },
   })),
 }));

@@ -447,3 +447,115 @@ export interface SpectrumParameters {
     concentration: number;
   };
 }
+
+export type WorkflowNodeType = 
+  | 'molecule_input'
+  | 'molecule_library'
+  | 'quantum_calculation'
+  | 'admet_prediction'
+  | 'drug_likeness'
+  | 'spectrum_simulation'
+  | 'property_calculation'
+  | 'folding_simulation'
+  | 'docking_simulation'
+  | 'reaction_simulation'
+  | 'data_filter'
+  | 'data_merge'
+  | 'result_export'
+  | 'visualization';
+
+export type WorkflowNodeStatus = 'idle' | 'running' | 'completed' | 'error' | 'skipped';
+
+export interface WorkflowPort {
+  id: string;
+  name: string;
+  type: 'input' | 'output';
+  dataType: 'molecule' | 'molecule_list' | 'descriptors' | 'admet' | 'drug_likeness' | 'spectrum' | 'simulation_result' | 'any';
+  required?: boolean;
+}
+
+export interface WorkflowNodeConfig {
+  [key: string]: any;
+}
+
+export interface WorkflowNode {
+  id: string;
+  type: WorkflowNodeType;
+  name: string;
+  description?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  inputs: WorkflowPort[];
+  outputs: WorkflowPort[];
+  config: WorkflowNodeConfig;
+  status: WorkflowNodeStatus;
+  error?: string;
+  progress?: number;
+  result?: any;
+}
+
+export interface WorkflowConnection {
+  id: string;
+  fromNodeId: string;
+  fromPortId: string;
+  toNodeId: string;
+  toPortId: string;
+}
+
+export interface WorkflowEdgePoint {
+  x: number;
+  y: number;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  nodes: WorkflowNode[];
+  connections: WorkflowConnection[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WorkflowExecutionState {
+  isRunning: boolean;
+  isPaused: boolean;
+  currentNodeId: string | null;
+  executedNodeIds: string[];
+  results: Record<string, any>;
+  error: string | null;
+  startedAt: number | null;
+  completedAt: number | null;
+}
+
+export interface WorkflowNodeDefinition {
+  type: WorkflowNodeType;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'input' | 'calculation' | 'simulation' | 'transformation' | 'output' | 'visualization';
+  inputs: WorkflowPort[];
+  outputs: WorkflowPort[];
+  defaultConfig: WorkflowNodeConfig;
+}
+
+export interface DragState {
+  isDragging: boolean;
+  nodeType: WorkflowNodeType | null;
+  nodeId: string | null;
+  startX: number;
+  startY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface ConnectionDragState {
+  isDragging: boolean;
+  fromNodeId: string | null;
+  fromPortId: string | null;
+  fromPortType: 'input' | 'output' | null;
+  currentX: number;
+  currentY: number;
+}

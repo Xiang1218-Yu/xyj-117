@@ -14,7 +14,8 @@ import {
   Sparkles,
   X,
   FlaskConical,
-  Activity
+  Activity,
+  Workflow
 } from 'lucide-react';
 import * as THREE from 'three';
 import { useStore } from '../store/useStore';
@@ -219,6 +220,16 @@ export default function Home() {
             title="分子光谱模拟器"
           >
             <Activity size={18} />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.location.href = '/workflow-editor'}
+            className="p-2 rounded-lg bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 hover:from-emerald-500/30 hover:to-teal-500/30 transition-all"
+            title="工作流编辑器"
+          >
+            <Workflow size={18} />
           </motion.button>
 
           <div className="h-6 w-px bg-space-700 mx-1" />
