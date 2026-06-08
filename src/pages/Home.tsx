@@ -13,7 +13,8 @@ import {
   Github,
   Sparkles,
   X,
-  FlaskConical
+  FlaskConical,
+  Activity
 } from 'lucide-react';
 import * as THREE from 'three';
 import { useStore } from '../store/useStore';
@@ -208,6 +209,16 @@ export default function Home() {
             title="反应机理模拟"
           >
             <FlaskConical size={18} />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.location.href = '/spectrum-simulator'}
+            className="p-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30 hover:from-purple-500/30 hover:to-pink-500/30 transition-all"
+            title="分子光谱模拟器"
+          >
+            <Activity size={18} />
           </motion.button>
 
           <div className="h-6 w-px bg-space-700 mx-1" />

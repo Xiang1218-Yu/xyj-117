@@ -29,6 +29,11 @@ import {
   PropertyCalculationState,
   ReactionMechanism,
   ReactionSimulationState,
+  SpectrumType,
+  SpectrumResult,
+  SpectrumSimulationState,
+  SpectrumParameters,
+  SpectrumPeak,
 } from '../types';
 import { moleculeLibrary, caffeineMolecule } from '../data/molecules';
 import {
@@ -43,6 +48,7 @@ import {
   addHydrogens,
   createNewMolecule,
 } from '../utils/moleculeEditor';
+import { simulateAllSpectra } from '../utils/spectrumSimulator';
 
 interface MoleculeStore {
   currentMolecule: Molecule | null;
@@ -172,6 +178,23 @@ interface ReactionSimulationStore {
   setReactionRunning: (running: boolean) => void;
 }
 
+interface SpectrumSimulationStore {
+  spectrumSimulation: SpectrumSimulationState;
+  spectrumParameters: SpectrumParameters;
+  selectedSpectrumMolecule: Molecule | null;
+  setSelectedSpectrumMolecule: (molecule: Molecule | null) => void;
+  setSelectedSpectrumTypes: (types: SpectrumType[]) => void;
+  toggleSpectrumType: (type: SpectrumType) => void;
+  setSpectrumParameters: (params: Partial<SpectrumParameters>) => void;
+  startSpectrumSimulation: () => void;
+  setSpectrumError: (error: string | null) => void;
+  setSpectrumResult: (type: SpectrumType, result: SpectrumResult) => void;
+  setAllSpectrumResults: (results: Partial<Record<SpectrumType, SpectrumResult>>) => void;
+  completeSpectrumSimulation: () => void;
+  resetSpectrumSimulation: () => void;
+  setSelectedSpectrumPeak: (peak: SpectrumPeak | null) => void;
+}
+
 const defaultSimulationParams: SimulationParameters = {
   temperature: 300,
   timestep: 1,
@@ -231,6 +254,33 @@ const defaultPointCloudConfig: PointCloudConfig = {
   sizeBy: 'element',
   constantSize: 0.5,
   opacity: 0.9,
+};
+
+const defaultSpectrumParameters: SpectrumParameters = {
+  ir: {
+    resolution: 4,
+    baseline: 0.05,
+    peakWidth: 25,
+  },
+  nmr_1h: {
+    frequency: 400,
+    solvent: 'CDCl3',
+    temperature: 298,
+    peakWidth: 0.05,
+  },
+  nmr_13c: {
+    frequency: 100,
+    solvent: 'CDCl3',
+    temperature: 298,
+    peakWidth: 0.3,
+    decoupled: true,
+  },
+  uv_vis: {
+    resolution: 2,
+    solvent: 'MeOH',
+    pathLength: 1,
+    concentration: 1e-5,
+  },
 };
 
 const defaultDisplayConfig: DisplayModeConfig = {
@@ -316,7 +366,7 @@ const defaultPresets: DisplayPreset[] = [
   },
 ];
 
-export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore & ReactionSimulationStore>((set, get) => ({
+export const useStore = create<MoleculeStore & SimulationStore & UIStore & EditorStore & PropertyCalculationStore & ReactionSimulationStore & SpectrumSimulationStore>((set, get) => ({
   currentMolecule: caffeineMolecule,
   currentAtoms: caffeineMolecule.atoms,
   selectedAtomId: null,
@@ -1287,6 +1337,120 @@ export const useStore = create<MoleculeStore & SimulationStore & UIStore & Edito
       ...state.reactionSimulation,
       isRunning: running,
       isPaused: !running,
+    },
+  })),
+
+  spectrumSimulation: {
+    isSimulating: false,
+    selectedSpectrumTypes: ['ir', 'nmr_1h', 'nmr_13c', 'uv_vis'],
+    results: {},
+    error: null,
+    simulatedAt: null,
+    selectedPeak: null,
+  },
+
+  spectrumParameters: defaultSpectrumParameters,
+
+  selectedSpectrumMolecule: null,
+
+  setSelectedSpectrumMolecule: (molecule) => set({ 
+    selectedSpectrumMolecule: molecule,
+    spectrumSimulation: {
+      ...get().spectrumSimulation,
+      results: {},
+      error: null,
+      simulatedAt: null,
+    },
+  }),
+
+  setSelectedSpectrumTypes: (types) => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      selectedSpectrumTypes: types,
+    },
+  })),
+
+  toggleSpectrumType: (type) => set((state) => {
+    const currentTypes = state.spectrumSimulation.selectedSpectrumTypes;
+    const newTypes = currentTypes.includes(type)
+      ? currentTypes.filter(t => t !== type)
+      : [...currentTypes, type];
+    
+    return {
+      spectrumSimulation: {
+        ...state.spectrumSimulation,
+        selectedSpectrumTypes: newTypes,
+      },
+    };
+  }),
+
+  setSpectrumParameters: (params) => set((state) => ({
+    spectrumParameters: {
+      ...state.spectrumParameters,
+      ...params,
+    },
+  })),
+
+  startSpectrumSimulation: () => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      isSimulating: true,
+      error: null,
+      results: {},
+      simulatedAt: null,
+      selectedPeak: null,
+    },
+  })),
+
+  setSpectrumError: (error) => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      isSimulating: false,
+      error,
+    },
+  })),
+
+  setSpectrumResult: (type, result) => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      results: {
+        ...state.spectrumSimulation.results,
+        [type]: result,
+      },
+    },
+  })),
+
+  setAllSpectrumResults: (results) => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      results,
+    },
+  })),
+
+  completeSpectrumSimulation: () => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      isSimulating: false,
+      simulatedAt: new Date(),
+    },
+  })),
+
+  resetSpectrumSimulation: () => set({
+    spectrumSimulation: {
+      isSimulating: false,
+      selectedSpectrumTypes: ['ir', 'nmr_1h', 'nmr_13c', 'uv_vis'],
+      results: {},
+      error: null,
+      simulatedAt: null,
+      selectedPeak: null,
+    },
+    spectrumParameters: defaultSpectrumParameters,
+  }),
+
+  setSelectedSpectrumPeak: (peak) => set((state) => ({
+    spectrumSimulation: {
+      ...state.spectrumSimulation,
+      selectedPeak: peak,
     },
   })),
 }));

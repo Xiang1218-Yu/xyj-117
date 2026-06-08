@@ -353,3 +353,97 @@ export interface AnimationParticle {
   maxLife: number;
   trail: { x: number; y: number; z: number }[];
 }
+
+export type SpectrumType = 'ir' | 'nmr_1h' | 'nmr_13c' | 'uv_vis';
+
+export interface SpectrumPeak {
+  wavelength: number;
+  intensity: number;
+  label?: string;
+  assignment?: string;
+  width?: number;
+}
+
+export interface IRSpectrum {
+  type: 'ir';
+  peaks: SpectrumPeak[];
+  wavelengthRange: { min: number; max: number };
+  resolution: number;
+  baseline: number;
+  functionalGroups: {
+    name: string;
+    wavelength: number;
+    intensity: string;
+    description: string;
+  }[];
+}
+
+export interface NMRSpectrum {
+  type: 'nmr_1h' | 'nmr_13c';
+  nucleus: '1H' | '13C';
+  peaks: SpectrumPeak[];
+  shiftRange: { min: number; max: number };
+  solvent: string;
+  frequency: number;
+  temperature: number;
+  assignments: {
+    shift: number;
+    integration: number;
+    multiplicity: string;
+    coupling?: number;
+    assignment: string;
+  }[];
+}
+
+export interface UVViSpectrum {
+  type: 'uv_vis';
+  peaks: SpectrumPeak[];
+  wavelengthRange: { min: number; max: number };
+  resolution: number;
+  solvent: string;
+  pathLength: number;
+  concentration: number;
+  molarAbsorptivity: {
+    wavelength: number;
+    epsilon: number;
+    transition?: string;
+  }[];
+}
+
+export type SpectrumResult = IRSpectrum | NMRSpectrum | UVViSpectrum;
+
+export interface SpectrumSimulationState {
+  isSimulating: boolean;
+  selectedSpectrumTypes: SpectrumType[];
+  results: Partial<Record<SpectrumType, SpectrumResult>>;
+  error: string | null;
+  simulatedAt: Date | null;
+  selectedPeak: SpectrumPeak | null;
+}
+
+export interface SpectrumParameters {
+  ir: {
+    resolution: number;
+    baseline: number;
+    peakWidth: number;
+  };
+  nmr_1h: {
+    frequency: number;
+    solvent: string;
+    temperature: number;
+    peakWidth: number;
+  };
+  nmr_13c: {
+    frequency: number;
+    solvent: string;
+    temperature: number;
+    peakWidth: number;
+    decoupled: boolean;
+  };
+  uv_vis: {
+    resolution: number;
+    solvent: string;
+    pathLength: number;
+    concentration: number;
+  };
+}
