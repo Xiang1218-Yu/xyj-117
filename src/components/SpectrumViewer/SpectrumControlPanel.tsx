@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Settings, RotateCcw, Play, BarChart3, Activity, Microwave, Radio, Sun } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { SpectrumType, SpectrumParameters } from '../../types';
+import { simulateAllSpectra } from '../../utils/spectrumSimulator';
 
 const SPECTRUM_TYPE_INFO: Record<SpectrumType, {
   label: string;
@@ -56,7 +57,6 @@ export function SpectrumControlPanel() {
     startSpectrumSimulation,
     resetSpectrumSimulation,
     setSelectedSpectrumMolecule,
-    simulateAllSpectra,
     setAllSpectrumResults,
     setSpectrumError,
     completeSpectrumSimulation,

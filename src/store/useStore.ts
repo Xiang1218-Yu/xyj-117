@@ -48,7 +48,7 @@ import {
   addHydrogens,
   createNewMolecule,
 } from '../utils/moleculeEditor';
-import { simulateAllSpectra } from '../utils/spectrumSimulator';
+
 
 interface MoleculeStore {
   currentMolecule: Molecule | null;

@@ -11,6 +11,42 @@ import {
   SpectrumParameters,
 } from '../types';
 
+function hashString(str: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function hashMolecule(molecule: Molecule): number {
+  const atomStr = molecule.atoms
+    .map(a => `${a.element}:${a.x.toFixed(2)},${a.y.toFixed(2)},${a.z.toFixed(2)}`)
+    .sort()
+    .join('|');
+  const bondStr = molecule.bonds
+    .map(b => `${b.atom1}-${b.atom2}:${b.order}`)
+    .sort()
+    .join('|');
+  return hashString(`${molecule.formula || ''}|${atomStr}|${bondStr}`);
+}
+
+function createSeededRandom(seed: number) {
+  let s = seed >>> 0;
+  return function(): number {
+    s = Math.imul(s ^ (s >>> 11), 2654435761);
+    s ^= s >>> 15;
+    s = Math.imul(s, 1540483477);
+    s ^= s >>> 13;
+    return (s >>> 0) / 4294967295;
+  };
+}
+
+function hashAtom(atom: Atom, index: number): number {
+  return hashString(`${atom.element}:${atom.id || index}:${atom.x.toFixed(3)}:${atom.y.toFixed(3)}:${atom.z.toFixed(3)}`);
+}
+
 const IR_FUNCTIONAL_GROUPS: Record<string, {
   wavelength: number;
   intensity: string;
@@ -85,7 +121,7 @@ const UV_TRANSITIONS: Record<string, { wavelength: number; epsilon: number; desc
   '电荷转移': { wavelength: 400, epsilon: 5000, description: '电荷转移跃迁' },
 };
 
-function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
+function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[], random: () => number): {
   name: string;
   wavelength: number;
   intensity: string;
@@ -132,7 +168,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           if (hasDoubleBondO) {
             groups.push({
               name: 'O-H (羧酸)',
-              wavelength: 3000 + Math.random() * 100 - 50,
+              wavelength: 3000 + random() * 100 - 50,
               intensity: '强宽',
               description: '羧酸羟基伸缩振动',
               count: 1,
@@ -140,7 +176,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           } else if (hasCarbonConnected) {
             groups.push({
               name: 'O-H (醇)',
-              wavelength: 3600 + Math.random() * 50 - 25,
+              wavelength: 3600 + random() * 50 - 25,
               intensity: '强',
               description: '羟基伸缩振动',
               count: 1,
@@ -158,7 +194,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           if (otherConnections.every(c => c.atom.element === 'C')) {
             groups.push({
               name: 'C=O (酮)',
-              wavelength: 1715 + Math.random() * 20 - 10,
+              wavelength: 1715 + random() * 20 - 10,
               intensity: '强',
               description: '酮羰基伸缩',
               count: 1,
@@ -166,7 +202,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           } else if (otherConnections.some(c => c.atom.element === 'H')) {
             groups.push({
               name: 'C=O (醛)',
-              wavelength: 1725 + Math.random() * 20 - 10,
+              wavelength: 1725 + random() * 20 - 10,
               intensity: '强',
               description: '醛羰基伸缩',
               count: 1,
@@ -174,7 +210,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           } else if (otherConnections.some(c => c.atom.element === 'O')) {
             groups.push({
               name: 'C=O (酯)',
-              wavelength: 1735 + Math.random() * 20 - 10,
+              wavelength: 1735 + random() * 20 - 10,
               intensity: '强',
               description: '酯羰基伸缩',
               count: 1,
@@ -182,7 +218,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
           } else if (otherConnections.some(c => c.atom.element === 'N')) {
             groups.push({
               name: 'C=O (酰胺)',
-              wavelength: 1650 + Math.random() * 20 - 10,
+              wavelength: 1650 + random() * 20 - 10,
               intensity: '强',
               description: '酰胺羰基伸缩',
               count: 1,
@@ -194,7 +230,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (connected.length === 2 && connected.every(c => c.bond.order === 1 && c.atom.element === 'C')) {
         groups.push({
           name: 'C-O',
-          wavelength: 1200 + Math.random() * 30 - 15,
+          wavelength: 1200 + random() * 30 - 15,
           intensity: '强',
           description: '醚C-O伸缩',
           count: 1,
@@ -207,7 +243,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (hCount > 0) {
         groups.push({
           name: 'N-H',
-          wavelength: 3400 + Math.random() * 40 - 20,
+          wavelength: 3400 + random() * 40 - 20,
           intensity: '中',
           description: '氨基伸缩振动',
           count: hCount,
@@ -218,7 +254,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (cConnected.length > 0) {
         groups.push({
           name: 'C-N',
-          wavelength: 1150 + Math.random() * 30 - 15,
+          wavelength: 1150 + random() * 30 - 15,
           intensity: '中',
           description: '脂肪胺C-N伸缩',
           count: cConnected.length,
@@ -228,7 +264,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (connected.some(c => c.bond.order === 3 && c.atom.element === 'C')) {
         groups.push({
           name: 'C≡N',
-          wavelength: 2250 + Math.random() * 15 - 7.5,
+          wavelength: 2250 + random() * 15 - 7.5,
           intensity: '中',
           description: '氰基伸缩振动',
           count: 1,
@@ -246,7 +282,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
         if (aromaticBonds.length > 0) {
           groups.push({
             name: 'C-H (芳香)',
-            wavelength: 3030 + Math.random() * 20 - 10,
+            wavelength: 3030 + random() * 20 - 10,
             intensity: '弱',
             description: '芳香C-H伸缩',
             count: connectedH.length,
@@ -254,7 +290,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
         } else if (doubleBonds.some(c => c.atom.element === 'C')) {
           groups.push({
             name: 'C-H (sp2)',
-            wavelength: 3080 + Math.random() * 20 - 10,
+            wavelength: 3080 + random() * 20 - 10,
             intensity: '中',
             description: '烯烃C-H伸缩',
             count: connectedH.length,
@@ -262,7 +298,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
         } else {
           groups.push({
             name: 'C-H (sp3)',
-            wavelength: 2950 + Math.random() * 30 - 15,
+            wavelength: 2950 + random() * 30 - 15,
             intensity: '强',
             description: '烷烃C-H伸缩',
             count: connectedH.length,
@@ -274,7 +310,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
         if (aromaticBonds.length === 0) {
           groups.push({
             name: 'C=C',
-            wavelength: 1640 + Math.random() * 30 - 15,
+            wavelength: 1640 + random() * 30 - 15,
             intensity: '中',
             description: '烯烃双键伸缩',
             count: 1,
@@ -285,7 +321,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (tripleBonds.some(c => c.atom.element === 'C')) {
         groups.push({
           name: 'C≡C',
-          wavelength: 2150 + Math.random() * 20 - 10,
+          wavelength: 2150 + random() * 20 - 10,
           intensity: '弱',
           description: '炔烃伸缩振动',
           count: 1,
@@ -295,7 +331,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
       if (aromaticBonds.length > 0) {
         groups.push({
           name: 'C-C (芳香)',
-          wavelength: 1600 + Math.random() * 20 - 10,
+          wavelength: 1600 + random() * 20 - 10,
           intensity: '中',
           description: '芳香环骨架振动',
           count: 1,
@@ -310,7 +346,7 @@ function identifyFunctionalGroups(atoms: Atom[], bonds: Bond[]): {
         if (info) {
           groups.push({
             name: bondType,
-            wavelength: info.wavelength + Math.random() * 20 - 10,
+            wavelength: info.wavelength + random() * 20 - 10,
             intensity: info.intensity,
             description: info.description,
             count: 1,
@@ -497,7 +533,7 @@ function analyzeHydrogenEnvironment(atoms: Atom[], bonds: Bond[], atom: Atom): {
   };
 }
 
-function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
+function analyzeUVTransitions(atoms: Atom[], bonds: Bond[], random: () => number): {
   name: string;
   wavelength: number;
   epsilon: number;
@@ -548,21 +584,21 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
     if (conjugationLength >= 4) {
       transitions.push({
         name: 'π→π* (多烯)',
-        wavelength: 250 + conjugationLength * 15 + Math.random() * 20,
+        wavelength: 250 + conjugationLength * 15 + random() * 20,
         epsilon: 20000 + conjugationLength * 2000,
         description: '多烯体系π→π*跃迁',
       });
     } else if (conjugationLength >= 2) {
       transitions.push({
         name: 'π→π* (共轭)',
-        wavelength: 220 + conjugationLength * 10 + Math.random() * 15,
+        wavelength: 220 + conjugationLength * 10 + random() * 15,
         epsilon: 15000 + conjugationLength * 1000,
         description: '共轭双键π→π*跃迁',
       });
     } else {
       transitions.push({
         name: 'π→π* (孤立)',
-        wavelength: 200 + Math.random() * 10,
+        wavelength: 200 + random() * 10,
         epsilon: 10000,
         description: '孤立双键π→π*跃迁',
       });
@@ -572,7 +608,7 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
   if (effectiveAromaticRings > 0) {
     transitions.push({
       name: 'π→π* (芳香)',
-      wavelength: 255 + effectiveAromaticRings * 10 + Math.random() * 15,
+      wavelength: 255 + effectiveAromaticRings * 10 + random() * 15,
       epsilon: 5000 * effectiveAromaticRings,
       description: '芳香环π→π*跃迁',
     });
@@ -580,7 +616,7 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
     if (effectiveAromaticRings >= 2) {
       transitions.push({
         name: 'π→π* (多环芳香)',
-        wavelength: 310 + effectiveAromaticRings * 15 + Math.random() * 20,
+        wavelength: 310 + effectiveAromaticRings * 15 + random() * 20,
         epsilon: 8000 * effectiveAromaticRings,
         description: '多环芳香体系π→π*跃迁',
       });
@@ -590,7 +626,7 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
   if (hasCarbonyl) {
     transitions.push({
       name: 'n→π*',
-      wavelength: 280 + (effectiveAromaticRings > 0 ? 30 : 0) + Math.random() * 10,
+      wavelength: 280 + (effectiveAromaticRings > 0 ? 30 : 0) + random() * 10,
       epsilon: effectiveAromaticRings > 0 ? 150 : 100,
       description: '羰基孤对电子到π*跃迁',
     });
@@ -599,7 +635,7 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
   if (hasHeteroatom) {
     transitions.push({
       name: 'n→σ*',
-      wavelength: 190 + (hasNitrogen ? 20 : 0) + (hasOxygen ? 10 : 0) + Math.random() * 10,
+      wavelength: 190 + (hasNitrogen ? 20 : 0) + (hasOxygen ? 10 : 0) + random() * 10,
       epsilon: 3000 + (hasOxygen ? 1000 : 0),
       description: '杂原子孤对电子到σ*跃迁',
     });
@@ -608,7 +644,7 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
   if (effectiveAromaticRings > 0 && hasHeteroatom) {
     transitions.push({
       name: '电荷转移',
-      wavelength: 380 + effectiveAromaticRings * 20 + Math.random() * 30,
+      wavelength: 380 + effectiveAromaticRings * 20 + random() * 30,
       epsilon: 3000 + effectiveAromaticRings * 500,
       description: '电荷转移跃迁',
     });
@@ -616,12 +652,74 @@ function analyzeUVTransitions(atoms: Atom[], bonds: Bond[]): {
 
   transitions.push({
     name: 'σ→σ*',
-    wavelength: 135 + Math.random() * 10,
+    wavelength: 135 + random() * 10,
     epsilon: 8000,
     description: 'σ键电子跃迁',
   });
 
   return transitions.sort((a, b) => a.wavelength - b.wavelength);
+}
+
+function binomialCoefficient(n: number, k: number): number {
+  if (k === 0 || k === n) return 1;
+  const minK = Math.min(k, n - k);
+  let result = 1;
+  for (let i = 0; i < minK; i++) {
+    result = (result * (n - i)) / (i + 1);
+  }
+  return result;
+}
+
+function splitNMRSignal(
+  center: number,
+  intensity: number,
+  multiplicity: string,
+  coupling: number | undefined,
+  frequency: number,
+  label: string,
+  assignment: string
+): { wavelength: number; intensity: number; label?: string; assignment?: string }[] {
+  const jHz = coupling || 7.5;
+  const jPpm = jHz / frequency;
+
+  let n = 0;
+  switch (multiplicity) {
+    case 's': n = 0; break;
+    case 'd': n = 1; break;
+    case 't': n = 2; break;
+    case 'q': n = 3; break;
+    case 'quint': n = 4; break;
+    case 'sext': n = 5; break;
+    case 'sept': n = 6; break;
+    case 'm': n = 4; break;
+    default: n = 0;
+  }
+
+  const result: { wavelength: number; intensity: number; label?: string; assignment?: string }[] = [];
+
+  if (n === 0) {
+    result.push({ wavelength: center, intensity, label, assignment });
+  } else {
+    const totalIntensity = intensity;
+    const coeffs: number[] = [];
+    for (let i = 0; i <= n; i++) {
+      coeffs.push(binomialCoefficient(n, i));
+    }
+    const sumCoeffs = coeffs.reduce((a, b) => a + b, 0);
+
+    for (let i = 0; i <= n; i++) {
+      const offset = (i - n / 2) * jPpm;
+      const relIntensity = coeffs[i] / sumCoeffs;
+      result.push({
+        wavelength: center + offset,
+        intensity: totalIntensity * relIntensity,
+        label: i === Math.floor(n / 2) ? label : undefined,
+        assignment: i === Math.floor(n / 2) ? assignment : undefined,
+      });
+    }
+  }
+
+  return result;
 }
 
 function generatePeaks(
@@ -665,7 +763,10 @@ export async function simulateIRSpectrum(
 ): Promise<IRSpectrum> {
   await new Promise(resolve => setTimeout(resolve, 300));
 
-  const functionalGroups = identifyFunctionalGroups(molecule.atoms, molecule.bonds);
+  const seed = hashMolecule(molecule);
+  const random = createSeededRandom(seed);
+
+  const functionalGroups = identifyFunctionalGroups(molecule.atoms, molecule.bonds, random);
   
   const peakCenters = functionalGroups.map(g => ({
     wavelength: g.wavelength,
@@ -706,19 +807,34 @@ export async function simulateNMR1HSpectrum(
 ): Promise<NMRSpectrum> {
   await new Promise(resolve => setTimeout(resolve, 400));
 
+  const seed = hashMolecule(molecule);
+  const random = createSeededRandom(seed);
+
   const hydrogenAtoms = molecule.atoms.filter(a => a.element === 'H');
   const assignments: NMRSpectrum['assignments'] = [];
 
-  for (const hAtom of hydrogenAtoms) {
+  for (let i = 0; i < hydrogenAtoms.length; i++) {
+    const hAtom = hydrogenAtoms[i];
+    const atomSeed = hashAtom(hAtom, i);
+    const atomRandom = createSeededRandom(seed ^ atomSeed);
+
     const env = analyzeHydrogenEnvironment(molecule.atoms, molecule.bonds, hAtom);
     const shiftInfo = H_NMR_SHIFTS[env.type] || H_NMR_SHIFTS['烷烃'];
-    const shift = shiftInfo.base + (Math.random() - 0.5) * shiftInfo.range;
+    const shift = shiftInfo.base + (atomRandom() - 0.5) * shiftInfo.range;
     
+    const baseCoupling = env.neighbors > 0 ? 7.0 + atomRandom() * 3.0 : undefined;
+    let actualCoupling = baseCoupling;
+    if (baseCoupling !== undefined) {
+      if (env.type === '烯烃') actualCoupling = 10 + atomRandom() * 6;
+      else if (env.type === '芳香') actualCoupling = 7.5 + atomRandom() * 1.5;
+      else if (env.type === '炔烃') actualCoupling = 2.5 + atomRandom() * 1;
+    }
+
     assignments.push({
       shift: Math.round(shift * 100) / 100,
       integration: env.integration,
       multiplicity: env.multiplicity,
-      coupling: env.neighbors > 0 ? 7.5 + Math.random() * 2 : undefined,
+      coupling: actualCoupling,
       assignment: shiftInfo.description,
     });
   }
@@ -733,18 +849,25 @@ export async function simulateNMR1HSpectrum(
     return acc;
   }, [] as NMRSpectrum['assignments']).sort((a, b) => b.shift - a.shift);
 
-  const peakCenters = uniqueAssignments.map(a => ({
-    wavelength: a.shift,
-    intensity: a.integration * 0.8,
-    label: `${a.shift.toFixed(2)} ppm`,
-    assignment: `${a.assignment} (${a.multiplicity}, J=${a.coupling?.toFixed(1) || '-'} Hz)`,
-  }));
+  let peakCenters: { wavelength: number; intensity: number; label?: string; assignment?: string }[] = [];
+  for (const a of uniqueAssignments) {
+    const splitPeaks = splitNMRSignal(
+      a.shift,
+      a.integration * 0.8,
+      a.multiplicity,
+      a.coupling,
+      params.frequency,
+      `${a.shift.toFixed(2)} ppm`,
+      `${a.assignment} (${a.multiplicity}, J=${a.coupling?.toFixed(1) || '-'} Hz)`
+    );
+    peakCenters = peakCenters.concat(splitPeaks);
+  }
 
   const peaks = generatePeaks(
     peakCenters,
     0,
     12,
-    0.02,
+    0.01,
     params.peakWidth
   ).map(p => ({
     ...p,
@@ -769,18 +892,47 @@ export async function simulateNMR13CSpectrum(
 ): Promise<NMRSpectrum> {
   await new Promise(resolve => setTimeout(resolve, 400));
 
+  const seed = hashMolecule(molecule);
+  const random = createSeededRandom(seed);
+
   const carbonAtoms = molecule.atoms.filter(a => a.element === 'C');
   const assignments: NMRSpectrum['assignments'] = [];
 
-  for (const cAtom of carbonAtoms) {
+  for (let i = 0; i < carbonAtoms.length; i++) {
+    const cAtom = carbonAtoms[i];
+    const atomSeed = hashAtom(cAtom, i);
+    const atomRandom = createSeededRandom(seed ^ atomSeed);
+
     const env = analyzeCarbonEnvironment(molecule.atoms, molecule.bonds, cAtom);
     const shiftInfo = C_NMR_SHIFTS[env.type] || C_NMR_SHIFTS['烷烃 (仲)'];
-    const shift = shiftInfo.base + (Math.random() - 0.5) * shiftInfo.range;
+    const shift = shiftInfo.base + (atomRandom() - 0.5) * shiftInfo.range;
     
+    let multiplicity = 's';
+    let coupling: number | undefined = undefined;
+
+    if (!params.decoupled) {
+      const atomMap = new Map(molecule.atoms.map(a => [a.id, a]));
+      const connected = molecule.bonds
+        .filter(b => b.atom1 === cAtom.id || b.atom2 === cAtom.id)
+        .map(b => {
+          const otherId = b.atom1 === cAtom.id ? b.atom2 : b.atom1;
+          return atomMap.get(otherId)!;
+        });
+      const hCount = connected.filter(a => a.element === 'H').length;
+      
+      if (hCount === 1) multiplicity = 'd';
+      else if (hCount === 2) multiplicity = 't';
+      else if (hCount === 3) multiplicity = 'q';
+      else if (hCount > 3) multiplicity = 'm';
+
+      coupling = 120 + atomRandom() * 40;
+    }
+
     assignments.push({
       shift: Math.round(shift * 10) / 10,
       integration: 1,
-      multiplicity: params.decoupled ? 's' : 't',
+      multiplicity,
+      coupling,
       assignment: shiftInfo.description,
     });
   }
@@ -795,18 +947,25 @@ export async function simulateNMR13CSpectrum(
     return acc;
   }, [] as NMRSpectrum['assignments']).sort((a, b) => b.shift - a.shift);
 
-  const peakCenters = uniqueAssignments.map(a => ({
-    wavelength: a.shift,
-    intensity: 0.9,
-    label: `${a.shift.toFixed(1)} ppm`,
-    assignment: a.assignment,
-  }));
+  let peakCenters: { wavelength: number; intensity: number; label?: string; assignment?: string }[] = [];
+  for (const a of uniqueAssignments) {
+    const splitPeaks = splitNMRSignal(
+      a.shift,
+      0.9,
+      a.multiplicity,
+      a.coupling,
+      params.frequency,
+      `${a.shift.toFixed(1)} ppm`,
+      a.assignment + (a.coupling ? ` (${a.multiplicity}, J=${a.coupling.toFixed(0)} Hz)` : ''),
+    );
+    peakCenters = peakCenters.concat(splitPeaks);
+  }
 
   const peaks = generatePeaks(
     peakCenters,
     0,
     220,
-    0.2,
+    0.05,
     params.peakWidth
   ).map(p => ({
     ...p,
@@ -831,7 +990,10 @@ export async function simulateUVViSSpectrum(
 ): Promise<UVViSpectrum> {
   await new Promise(resolve => setTimeout(resolve, 350));
 
-  const transitions = analyzeUVTransitions(molecule.atoms, molecule.bonds);
+  const seed = hashMolecule(molecule);
+  const random = createSeededRandom(seed);
+
+  const transitions = analyzeUVTransitions(molecule.atoms, molecule.bonds, random);
 
   const peakCenters = transitions.map(t => ({
     wavelength: t.wavelength,
